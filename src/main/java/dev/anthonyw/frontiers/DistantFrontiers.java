@@ -1,0 +1,43 @@
+package dev.anthonyw.frontiers;
+
+import com.mojang.logging.LogUtils;
+import dev.anthonyw.frontiers.command.RingsCommand;
+import dev.anthonyw.frontiers.ring.BoundaryWatcher;
+import dev.anthonyw.frontiers.ring.RingManager;
+import dev.anthonyw.frontiers.scaling.SpawnScaling;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.event.server.ServerAboutToStartEvent;
+import org.slf4j.Logger;
+
+/**
+ * Distant Frontiers — distance-based difficulty rings, elites, expedition heat
+ * and contracts for a private ATM10 server.
+ *
+ * Deliberately server-side only: no registered items, blocks, entities or
+ * network channels, so vanilla-modlist clients can join freely and the jar
+ * only needs to be dropped into the server's mods folder.
+ */
+@Mod(DistantFrontiers.MODID)
+public final class DistantFrontiers {
+    public static final String MODID = "distantfrontiers";
+    public static final Logger LOGGER = LogUtils.getLogger();
+
+    public DistantFrontiers(IEventBus modEventBus) {
+        NeoForge.EVENT_BUS.addListener(this::onServerAboutToStart);
+        NeoForge.EVENT_BUS.addListener(this::onRegisterCommands);
+        NeoForge.EVENT_BUS.register(new BoundaryWatcher());
+        NeoForge.EVENT_BUS.register(new SpawnScaling());
+        LOGGER.info("Distant Frontiers loaded. The frontier awaits.");
+    }
+
+    private void onServerAboutToStart(ServerAboutToStartEvent event) {
+        RingManager.load();
+    }
+
+    private void onRegisterCommands(RegisterCommandsEvent event) {
+        RingsCommand.register(event.getDispatcher());
+    }
+}

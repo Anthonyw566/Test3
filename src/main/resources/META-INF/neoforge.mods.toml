@@ -1,0 +1,29 @@
+modLoader = "javafml"
+loaderVersion = "[4,)"
+license = "All Rights Reserved"
+
+[[mods]]
+modId = "distantfrontiers"
+version = "0.1.0"
+displayName = "Distant Frontiers"
+description = '''
+Distance-based difficulty rings, elite enemies, expedition heat, and a contract
+board for a private All The Mods 10 server. Server-side only: players do not
+need this mod installed to join.
+'''
+# Server-only mod: clients without it may connect.
+displayTest = "IGNORE_ALL_VERSION"
+
+[[dependencies.distantfrontiers]]
+modId = "neoforge"
+type = "required"
+versionRange = "[21.1.0,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.distantfrontiers]]
+modId = "minecraft"
+type = "required"
+versionRange = "[1.21.1, 1.22)"
+ordering = "NONE"
+side = "BOTH"
