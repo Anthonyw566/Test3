@@ -1,10 +1,14 @@
 package dev.anthonyw.frontiers.ring;
 
+import dev.anthonyw.frontiers.contract.ContractBoard;
+import dev.anthonyw.frontiers.heat.HeatManager;
+import dev.anthonyw.frontiers.state.FrontiersState;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -13,15 +17,18 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Detects ring crossings (checked once per second per player) and plays the
- * entry fanfare: colored title, flavor subtitle, action-bar danger readout and
- * a directional sound - a low toll heading into danger, a bright chime heading
- * home. All of it is plain vanilla packets, so unmodded clients see everything.
+ * entry fanfare: colored title, flavor subtitle and a directional sound - a
+ * low toll heading into danger, a bright chime heading home. Also handles
+ * first-discovery announcements, uncharted-ring warnings, and tells the Heat
+ * system about crossings (grace periods, cash-out). All vanilla packets, so
+ * unmodded clients see everything.
  */
 public final class BoundaryWatcher {
     private final Map<UUID, String> lastRing = new ConcurrentHashMap<>();
@@ -56,11 +63,51 @@ public final class BoundaryWatcher {
         Ring previousRing = mgr.byId(previous);
         boolean deeper = previousRing == null || ring.danger() > previousRing.danger();
         announce(player, ring, deeper);
+        HeatManager.INSTANCE.onRingChange(player);
+        onCrossedInto(player, ring, mgr);
     }
 
     @SubscribeEvent
     public void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         lastRing.remove(event.getEntity().getUUID());
+    }
+
+    /** First discoveries and uncharted-territory warnings. */
+    private static void onCrossedInto(ServerPlayer player, Ring ring, RingManager mgr) {
+        if (ring.danger() <= 0) {
+            return;
+        }
+        MinecraftServer server = player.serverLevel().getServer();
+        FrontiersState state = FrontiersState.get(server);
+
+        if (state.discover(ring.id())) {
+            int bonus = 10 * ring.danger();
+            state.addBanked(player.getUUID(), bonus);
+            server.getPlayerList().broadcastSystemMessage(Component.literal("★ ")
+                    .withStyle(ChatFormatting.GOLD)
+                    .append(Component.literal(player.getName().getString()
+                            + " is the first to reach ").withStyle(ChatFormatting.GOLD))
+                    .append(Component.literal(ring.name()).withStyle(ring.color()))
+                    .append(Component.literal("! (◈ " + bonus + " banked)")
+                            .withStyle(ChatFormatting.GOLD)), false);
+        }
+
+        // Warn when entering a ring beyond the charter frontier (soft progression:
+        // scary, allowed, and clearly communicated).
+        List<Ring> dangerRings = mgr.rings().stream().filter(r -> r.danger() > 0).toList();
+        int index = -1;
+        for (int i = 0; i < dangerRings.size(); i++) {
+            if (dangerRings.get(i).id().equals(ring.id())) {
+                index = i;
+                break;
+            }
+        }
+        if (index > state.chartered().size()
+                && !ring.id().equals(ContractBoard.activeCharterRing(state, mgr))) {
+            player.sendSystemMessage(Component.literal(
+                            "This land is uncharted — the Board offers no support here yet.")
+                    .withStyle(ChatFormatting.RED, ChatFormatting.ITALIC));
+        }
     }
 
     private static void announce(ServerPlayer player, Ring ring, boolean deeper) {

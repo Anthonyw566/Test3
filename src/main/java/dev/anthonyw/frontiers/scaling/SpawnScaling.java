@@ -86,6 +86,24 @@ public final class SpawnScaling {
         Elites.maybePromote(mob, ring);
     }
 
+    /**
+     * Scaling for mobs we spawn ourselves (ambushes, quarries, guards) via
+     * MOB_SUMMONED, which the natural pipeline ignores. Idempotent.
+     */
+    public static void applyManual(Mob mob, Ring ring) {
+        RingManager mgr = RingManager.get();
+        if (mgr == null) {
+            return;
+        }
+        CompoundTag data = mob.getPersistentData();
+        if (data.getBoolean(TAG_SCALED)) {
+            return;
+        }
+        data.putBoolean(TAG_SCALED, true);
+        data.putString(TAG_RING, ring.id());
+        applyRingScaling(mob, ring, mgr);
+    }
+
     private static void applyRingScaling(Mob mob, Ring ring, RingManager mgr) {
         addMultiplier(mob.getAttribute(Attributes.MAX_HEALTH), HEALTH_ID,
                 Math.min(ring.healthMult(), mgr.maxHealthMult()) - 1.0);
