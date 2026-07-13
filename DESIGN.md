@@ -115,7 +115,7 @@ Rejected: loot crates with random rolls as the primary reward (RNG disappointmen
 
 **Elites** (1 modifier, colored name, ~4–16% of natural hostile spawns by ring) and **Champions** (2 modifiers from *different categories*, generated name + epithet, glowing outline, kill announced in chat). The name IS the telegraph: the epithet states the scariest modifier.
 
-**v1 modifier library (6):**
+**v1 modifier library (8):**
 
 | Modifier | Epithet | Effect | Telegraph |
 |---|---|---|---|
@@ -125,8 +125,14 @@ Rejected: loot crates with random rolls as the primary reward (RNG disappointmen
 | Blinkstep | *the Unseen* | teleports 6–10 blocks when hit (6s cooldown) | ender particles + sound |
 | Corrosive | *the Vile* | leaves a lingering harming cloud on death; occasional acid spit | dripping green particles |
 | Vengeful | *the Wrathful* | +speed/+damage for 8s when a nearby ally dies | red flash + roar |
+| **Warper** | *the Warping* | its hits can teleport **the player**: flung ~10 blocks skyward, position-swapped with the attacker, scattered 10–16 blocks sideways — or, rarely (Ashenfront, 5% of procs, config), **ripped straight into the Nether** at 1:8 coordinates | reverse-portal particles; every warp has sound + message |
+| **Sieger** | *the Sunderer* | mines through cover to reach a hiding target: vanilla crack animation, hardness-scaled speed | crit particles, block-hit sounds, visible cracks |
 
-1.1 adds: **Shieldbearer** (*the Warden* — nearby allies take −30% damage; kill it first) and **Warded** (*the Undying* — strong regen unless hit within 3s). Categories (mobility/defense/offense/support) gate pairings: a Champion draws from two different categories, and banned pairs (Swift+Blinkstep, Summoner+Vengeful) are checked explicitly. Abilities never stun-lock, never one-shot, and never remove player control — that rule is absolute.
+Warper rules: 25% proc chance per hit, 8s cooldown per mob, never triggers on creative/spectator, toss requires 6+ blocks of headroom (else it degrades to scatter), Nether rifts search for a safe landing (feet/head clear, solid non-lava floor) and degrade to scatter if none exists — spicy, never insta-lethal. A rift is broadcast to the whole server, because that's a story.
+
+Sieger rules (the anti-"hide in a dirt hut" answer): digs only when its target is unreachable (no line of sight, or pathing gave up), only blocks within reach along the eye-line, hardness cap (default 5.0 — obsidian-class blocks and everything on the blacklist are safe), **never blocks with block entities** (chests, barrels, ATM10 machines — breaching, not robbing), **never inside the Hearth**, and each sieger has a lifetime budget of 32 blocks. Broken blocks drop as items by default. Hunters (the Marked-heat stalkers) always carry Sieger — when the frontier sends someone for you, walls are a delay, not a defense.
+
+1.1 adds: **Shieldbearer** (*the Warden* — nearby allies take −30% damage; kill it first) and **Warded** (*the Undying* — strong regen unless hit within 3s). Categories (mobility/defense/offense/support/breach) gate pairings: a Champion draws from two different categories, and banned pairs (Summoner+Vengeful) are checked explicitly — Swift/Blinkstep/Warper share the mobility category so no champion ever has two kinds of teleport. Abilities never stun-lock, never one-shot, and never remove player control — that rule is absolute (a Nether rift moves you, it doesn't kill you).
 
 ## 9. Objectives → Contracts
 

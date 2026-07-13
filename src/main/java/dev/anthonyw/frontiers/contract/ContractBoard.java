@@ -1,10 +1,10 @@
 package dev.anthonyw.frontiers.contract;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import dev.anthonyw.frontiers.DistantFrontiers;
+import dev.anthonyw.frontiers.core.AnnulusPoint;
+import dev.anthonyw.frontiers.core.ContractsConfigParser;
 import dev.anthonyw.frontiers.elite.Elites;
+import dev.anthonyw.frontiers.util.McRand;
 import dev.anthonyw.frontiers.heat.HeatManager;
 import dev.anthonyw.frontiers.ring.Ring;
 import dev.anthonyw.frontiers.ring.RingManager;
@@ -39,9 +39,7 @@ import javax.annotation.Nullable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * The Contract Board: one system for everything players can DO out there.
@@ -63,69 +61,46 @@ public final class ContractBoard {
 
     private static final int[] BOUNTY_REWARD_BY_DANGER = {0, 15, 25, 40, 60};
 
-    private static List<String> bountyMobs = List.of(
-            "minecraft:zombie", "minecraft:husk", "minecraft:skeleton", "minecraft:stray",
-            "minecraft:spider", "minecraft:creeper", "minecraft:witch", "minecraft:pillager",
-            "minecraft:vindicator");
-    private static Map<String, String> cacheLootTables = Map.of("default", "minecraft:chests/simple_dungeon");
-    private static int charterSlayBase = 3;
-    private static int charterSlayPerDanger = 2;
+    private static volatile ContractsConfigParser.Data config =
+            ContractsConfigParser.parse(ContractsConfigParser.DEFAULT_JSON).data();
 
     private ContractBoard() {
     }
 
     // ------------------------------------------------------------------
-    // Config
+    // Config (parsing lives in the unit-tested core module)
 
-    public static void loadConfig() {
+    public static List<String> loadConfig() {
         Path file = FMLPaths.CONFIGDIR.get().resolve(DistantFrontiers.MODID).resolve("contracts.json");
+        List<String> errors = new ArrayList<>();
         try {
             Files.createDirectories(file.getParent());
             if (!Files.exists(file)) {
-                Files.writeString(file, DEFAULT_CONFIG);
+                Files.writeString(file, ContractsConfigParser.DEFAULT_JSON);
             }
-            JsonObject root = JsonParser.parseString(Files.readString(file)).getAsJsonObject();
-            if (root.has("bountyMobs")) {
-                List<String> mobs = new ArrayList<>();
-                for (JsonElement e : root.getAsJsonArray("bountyMobs")) {
-                    String id = e.getAsString();
-                    if (EntityType.byString(id).isPresent()) {
-                        mobs.add(id);
-                    } else {
-                        DistantFrontiers.LOGGER.warn("contracts.json: unknown entity id {}", id);
-                    }
-                }
-                if (!mobs.isEmpty()) {
-                    bountyMobs = mobs;
+            ContractsConfigParser.Result result = ContractsConfigParser.parse(Files.readString(file));
+            errors.addAll(result.errors());
+            for (String id : result.data().bountyMobs()) {
+                if (EntityType.byString(id).isEmpty()) {
+                    errors.add("contracts.json: entity " + id + " does not exist in this pack");
                 }
             }
-            if (root.has("cacheLootTables")) {
-                Map<String, String> tables = new HashMap<>();
-                JsonObject obj = root.getAsJsonObject("cacheLootTables");
-                for (String key : obj.keySet()) {
-                    tables.put(key, obj.get(key).getAsString());
-                }
-                if (!tables.isEmpty()) {
-                    cacheLootTables = tables;
-                }
-            }
-            if (root.has("charterSlayBase")) {
-                charterSlayBase = root.get("charterSlayBase").getAsInt();
-            }
-            if (root.has("charterSlayPerDanger")) {
-                charterSlayPerDanger = root.get("charterSlayPerDanger").getAsInt();
-            }
+            config = result.data();
+            errors.forEach(e -> DistantFrontiers.LOGGER.warn("contracts.json: {}", e));
         } catch (Exception e) {
+            errors.add("could not read contracts.json: " + e.getMessage());
             DistantFrontiers.LOGGER.error("Failed to load contracts.json, using defaults", e);
         }
+        return errors;
     }
 
     public static String randomAmbushMob(ServerLevel level) {
-        return bountyMobs.get(level.random.nextInt(bountyMobs.size()));
+        List<String> mobs = config.bountyMobs();
+        return mobs.get(level.random.nextInt(mobs.size()));
     }
 
     public static int charterSlayTarget(Ring ring) {
-        return charterSlayBase + charterSlayPerDanger * ring.danger();
+        return config.charterSlayTarget(ring.danger());
     }
 
     // ------------------------------------------------------------------
@@ -169,7 +144,7 @@ public final class ContractBoard {
             FrontiersState.Bounty bounty = new FrontiersState.Bounty();
             bounty.id = state.nextContractId();
             bounty.ringId = ring.id();
-            bounty.mobId = bountyMobs.get(overworld.random.nextInt(bountyMobs.size()));
+            bounty.mobId = randomAmbushMob(overworld);
             bounty.quarryName = Elites.generateName(overworld.random);
             bounty.champion = overworld.random.nextDouble() < (ring.danger() >= 3 ? 0.5 : 0.2);
             bounty.reward = BOUNTY_REWARD_BY_DANGER[Math.min(4, Math.max(1, ring.danger()))]
@@ -234,29 +209,16 @@ public final class ContractBoard {
         ServerLevel overworld = server.overworld();
         RingManager mgr = RingManager.get();
 
-        double inner = 0;
-        double outer = ring.outerRadius();
-        for (Ring r : mgr.rings()) {
-            if (r.id().equals(ring.id())) {
-                break;
-            }
-            if (!r.unbounded()) {
-                inner = r.outerRadius();
-            }
-        }
-        if (outer < 0) {
-            outer = inner + 1200;
-        }
-        double margin = Math.min(150, (outer - inner) / 4);
-        double radius = inner + margin + overworld.random.nextDouble() * (outer - inner - 2 * margin);
-        double angle = overworld.random.nextDouble() * Math.PI * 2;
+        double inner = mgr.innerRadius(ring.id());
+        double outer = ring.unbounded() ? inner + 1200 : ring.outerRadius();
+        double[] offset = AnnulusPoint.roll(new McRand(overworld.random), inner, outer);
         double[] origin = mgr.origin(overworld);
 
         FrontiersState.Cache cache = new FrontiersState.Cache();
         cache.id = state.nextContractId();
         cache.ringId = ring.id();
-        cache.x = (int) (origin[0] + Math.cos(angle) * radius);
-        cache.z = (int) (origin[1] + Math.sin(angle) * radius);
+        cache.x = (int) (origin[0] + offset[0]);
+        cache.z = (int) (origin[1] + offset[1]);
         cache.charterCache = charter;
         cache.reward = 10 + 10 * ring.danger();
         if (purchaser != null) {
@@ -324,7 +286,7 @@ public final class ContractBoard {
         level.setBlockAndUpdate(surface, Blocks.CHEST.defaultBlockState());
         if (level.getBlockEntity(surface) instanceof RandomizableContainerBlockEntity chest) {
             ResourceLocation table = ResourceLocation.tryParse(
-                    cacheLootTables.getOrDefault(ring.id(), cacheLootTables.getOrDefault(
+                    config.cacheLootTables().getOrDefault(ring.id(), config.cacheLootTables().getOrDefault(
                             "default", "minecraft:chests/simple_dungeon")));
             if (table != null) {
                 chest.setLootTable(ResourceKey.create(Registries.LOOT_TABLE, table), level.random.nextLong());
@@ -601,21 +563,4 @@ public final class ContractBoard {
         }
         player.sendSystemMessage(Component.literal("No such open contract.").withStyle(ChatFormatting.RED));
     }
-
-    private static final String DEFAULT_CONFIG = """
-            {
-              "bountyMobs": [
-                "minecraft:zombie", "minecraft:husk", "minecraft:skeleton", "minecraft:stray",
-                "minecraft:spider", "minecraft:creeper", "minecraft:witch", "minecraft:pillager",
-                "minecraft:vindicator"
-              ],
-              "cacheLootTables": {
-                "default": "minecraft:chests/simple_dungeon",
-                "duskreach": "minecraft:chests/stronghold_corridor",
-                "ashenfront": "minecraft:chests/ancient_city"
-              },
-              "charterSlayBase": 3,
-              "charterSlayPerDanger": 2
-            }
-            """;
 }

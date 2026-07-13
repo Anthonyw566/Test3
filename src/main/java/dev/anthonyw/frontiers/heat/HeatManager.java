@@ -1,6 +1,7 @@
 package dev.anthonyw.frontiers.heat;
 
 import dev.anthonyw.frontiers.contract.ContractBoard;
+import dev.anthonyw.frontiers.core.HeatMath;
 import dev.anthonyw.frontiers.elite.EliteBehaviors;
 import dev.anthonyw.frontiers.elite.Elites;
 import dev.anthonyw.frontiers.event.SurgeManager;
@@ -40,9 +41,9 @@ import java.util.UUID;
 public final class HeatManager {
     public static final HeatManager INSTANCE = new HeatManager();
 
-    public static final float RESTLESS = 25;
-    public static final float HUNTED = 50;
-    public static final float MARKED = 75;
+    public static final float RESTLESS = HeatMath.RESTLESS;
+    public static final float HUNTED = HeatMath.HUNTED;
+    public static final float MARKED = HeatMath.MARKED;
 
     private static final int GRACE_TICKS = 600;            // 30s after crossing a boundary
     private static final int AMBUSH_COOLDOWN = 9600;       // 8 min
@@ -99,7 +100,7 @@ public final class HeatManager {
         float heat = state.heat(uuid);
         if (ring.heatGainPerMinute() > 0) {
             float before = heat;
-            heat = Math.min(100f, heat + (float) (ring.heatGainPerMinute() / 60.0));
+            heat = HeatMath.clamp(heat + HeatMath.gainPerSecond(ring.heatGainPerMinute()));
             state.setHeat(uuid, heat);
             notifyThresholdCrossed(player, before, heat);
         }
@@ -127,7 +128,7 @@ public final class HeatManager {
     /** Heat bump on elite kills - killing the frontier's captains angers it. */
     public static void addKillHeat(ServerPlayer player, int tier) {
         FrontiersState state = FrontiersState.get(player.serverLevel().getServer());
-        state.setHeat(player.getUUID(), state.heat(player.getUUID()) + (tier >= 2 ? 10 : 5));
+        state.setHeat(player.getUUID(), state.heat(player.getUUID()) + HeatMath.killHeat(tier));
     }
 
     public static void relieveHeat(ServerPlayer player, float amount) {
@@ -143,7 +144,7 @@ public final class HeatManager {
             return;
         }
         if (fieldMarks > 0) {
-            double multiplier = 1.0 + heat / 200.0;
+            double multiplier = HeatMath.bankMultiplier(heat);
             int banked = state.bankField(uuid, multiplier);
             int bonus = banked - fieldMarks;
             MutableComponent message = Component.literal("Expedition banked: ")
@@ -165,7 +166,7 @@ public final class HeatManager {
         UUID uuid = player.getUUID();
         int fieldMarks = state.fieldMarks(uuid);
         if (fieldMarks > 0) {
-            int banked = state.bankField(uuid, 0.5);
+            int banked = state.bankField(uuid, HeatMath.DEATH_BANK_FRACTION);
             player.sendSystemMessage(Component.literal(
                             "You fell. ◈ " + banked + " of your field Marks made it home; the rest are lost.")
                     .withStyle(ChatFormatting.RED));
@@ -239,6 +240,9 @@ public final class HeatManager {
         }
         lastHunter.put(player.getUUID(), now);
         Elites.promote(hunter, ring, true, null);
+        if (EliteBehaviors.config().hunterAlwaysSieger()) {
+            EliteBehaviors.forceSieger(hunter); // no wall hides you from a hunter
+        }
         hunter.getPersistentData().putBoolean(ContractBoard.TAG_HUNTER, true);
         hunter.setPersistenceRequired();
         hunter.setTarget(player);
@@ -282,28 +286,15 @@ public final class HeatManager {
     }
 
     public static String heatLabel(float heat) {
-        if (heat >= MARKED) {
-            return "Marked";
-        }
-        if (heat >= HUNTED) {
-            return "Hunted";
-        }
-        if (heat >= RESTLESS) {
-            return "Restless";
-        }
-        return "Calm";
+        return HeatMath.levelFor(heat).label();
     }
 
     public static ChatFormatting heatColor(float heat) {
-        if (heat >= MARKED) {
-            return ChatFormatting.RED;
-        }
-        if (heat >= HUNTED) {
-            return ChatFormatting.GOLD;
-        }
-        if (heat >= RESTLESS) {
-            return ChatFormatting.YELLOW;
-        }
-        return ChatFormatting.GREEN;
+        return switch (HeatMath.levelFor(heat)) {
+            case MARKED -> ChatFormatting.RED;
+            case HUNTED -> ChatFormatting.GOLD;
+            case RESTLESS -> ChatFormatting.YELLOW;
+            case CALM -> ChatFormatting.GREEN;
+        };
     }
 }

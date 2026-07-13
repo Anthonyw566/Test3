@@ -16,6 +16,11 @@ java {
     }
 }
 
+// The mod compiles the pure-logic core sources directly into its own jar.
+// The :core subproject compiles and TESTS the same sources without Minecraft,
+// so `gradle :core:test` works even where the NeoForge toolchain can't download.
+sourceSets.main.java.srcDir 'core/src/main/java'
+
 neoForge {
     version = project.neo_version
 

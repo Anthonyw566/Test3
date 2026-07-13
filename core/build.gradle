@@ -1,0 +1,32 @@
+// Pure-logic module: NO Minecraft/NeoForge dependencies, so its tests compile
+// and run anywhere (only Maven Central needed). The root mod project compiles
+// these same sources into the mod jar directly (srcDir include), so there is
+// no jar-in-jar packaging to deal with.
+plugins {
+    id 'java-library'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    api 'com.google.code.gson:gson:2.11.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+test {
+    useJUnitPlatform()
+    testLogging {
+        events 'passed', 'failed', 'skipped'
+        showStandardStreams = false
+        exceptionFormat = 'full'
+    }
+}

@@ -1,10 +1,9 @@
 package dev.anthonyw.frontiers.economy;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import dev.anthonyw.frontiers.DistantFrontiers;
 import dev.anthonyw.frontiers.contract.ContractBoard;
+import dev.anthonyw.frontiers.core.ShopConfigParser;
+import dev.anthonyw.frontiers.core.ShopConfigParser.OfferDef;
 import dev.anthonyw.frontiers.ring.Ring;
 import dev.anthonyw.frontiers.ring.RingManager;
 import dev.anthonyw.frontiers.state.FrontiersState;
@@ -30,61 +29,42 @@ import java.util.List;
 
 /**
  * The Marks shop - clickable chat menu, config-driven stock, tiers gated by
- * how many rings the server has chartered. Prices and contents live in
- * config/distantfrontiers/shop.json so tuning never needs a rebuild.
- *
- * Stock follows the reward principles: acceleration and convenience, never
- * pack-progression skips. The Cache Map is the special offer that lets
- * players buy their own adventure.
+ * how many rings the server has chartered. Parsing/validation lives in the
+ * unit-tested core module; this class resolves items against the running pack
+ * and hands them out.
  */
 public final class Shop {
-    private static final List<Offer> OFFERS = new ArrayList<>();
+    private static volatile List<OfferDef> offers = List.of();
 
     private Shop() {
     }
 
-    public record OfferItem(String itemId, int count) {
-    }
-
-    public record Offer(String id, String name, int cost, int tier,
-                        @Nullable String special, List<OfferItem> items) {
-    }
-
-    public static void load() {
+    public static List<String> load() {
         Path file = FMLPaths.CONFIGDIR.get().resolve(DistantFrontiers.MODID).resolve("shop.json");
-        OFFERS.clear();
+        List<String> errors = new ArrayList<>();
         try {
             Files.createDirectories(file.getParent());
             if (!Files.exists(file)) {
-                Files.writeString(file, DEFAULT_CONFIG);
+                Files.writeString(file, ShopConfigParser.DEFAULT_JSON);
             }
-            JsonObject root = JsonParser.parseString(Files.readString(file)).getAsJsonObject();
-            for (JsonElement e : root.getAsJsonArray("offers")) {
-                JsonObject o = e.getAsJsonObject();
-                List<OfferItem> items = new ArrayList<>();
-                if (o.has("items")) {
-                    for (JsonElement itemElement : o.getAsJsonArray("items")) {
-                        JsonObject item = itemElement.getAsJsonObject();
-                        String id = item.get("id").getAsString();
-                        if (resolveItem(id) == null) {
-                            DistantFrontiers.LOGGER.warn("shop.json: unknown item id {}", id);
-                            continue;
-                        }
-                        items.add(new OfferItem(id, item.has("count") ? item.get("count").getAsInt() : 1));
+            ShopConfigParser.Result result = ShopConfigParser.parse(Files.readString(file));
+            errors.addAll(result.errors());
+            for (OfferDef offer : result.offers()) {
+                for (ShopConfigParser.ItemDef item : offer.items()) {
+                    if (resolveItem(item.itemId()) == null) {
+                        errors.add("offer \"" + offer.id() + "\": item " + item.itemId()
+                                + " does not exist in this pack");
                     }
                 }
-                OFFERS.add(new Offer(
-                        o.get("id").getAsString(),
-                        o.has("name") ? o.get("name").getAsString() : o.get("id").getAsString(),
-                        o.has("cost") ? o.get("cost").getAsInt() : 10,
-                        o.has("tier") ? o.get("tier").getAsInt() : 0,
-                        o.has("special") ? o.get("special").getAsString() : null,
-                        items));
             }
-            DistantFrontiers.LOGGER.info("Loaded {} shop offers", OFFERS.size());
+            offers = result.offers();
+            errors.forEach(e -> DistantFrontiers.LOGGER.warn("shop.json: {}", e));
+            DistantFrontiers.LOGGER.info("Loaded {} shop offers", offers.size());
         } catch (Exception e) {
+            errors.add("could not read shop.json: " + e.getMessage());
             DistantFrontiers.LOGGER.error("Failed to load shop.json", e);
         }
+        return errors;
     }
 
     @Nullable
@@ -101,7 +81,7 @@ public final class Shop {
         player.sendSystemMessage(Component.literal(
                         "◈ " + state.banked(player.getUUID()) + " banked · shop tier " + tier)
                 .withStyle(ChatFormatting.DARK_AQUA));
-        for (Offer offer : OFFERS) {
+        for (OfferDef offer : offers) {
             MutableComponent line;
             if (offer.tier() > tier) {
                 line = Component.literal("✦ ◈" + offer.cost() + " " + offer.name()
@@ -121,12 +101,12 @@ public final class Shop {
         }
     }
 
-    private static Component hoverFor(Offer offer) {
+    private static Component hoverFor(OfferDef offer) {
         if ("cache_map".equals(offer.special())) {
             return Component.literal("Reveals a guarded supply cache in your current ring");
         }
         StringBuilder text = new StringBuilder("Contains:");
-        for (OfferItem item : offer.items()) {
+        for (ShopConfigParser.ItemDef item : offer.items()) {
             text.append("\n  ").append(item.count()).append("× ").append(item.itemId());
         }
         return Component.literal(text.toString());
@@ -134,7 +114,7 @@ public final class Shop {
 
     public static void buy(ServerPlayer player, String offerId) {
         FrontiersState state = FrontiersState.get(player.serverLevel().getServer());
-        Offer offer = OFFERS.stream().filter(o -> o.id().equals(offerId)).findFirst().orElse(null);
+        OfferDef offer = offers.stream().filter(o -> o.id().equals(offerId)).findFirst().orElse(null);
         if (offer == null) {
             player.sendSystemMessage(Component.literal("No such offer.").withStyle(ChatFormatting.RED));
             return;
@@ -161,7 +141,7 @@ public final class Shop {
 
         if (!state.spendBanked(player.getUUID(), offer.cost())) {
             player.sendSystemMessage(Component.literal("Not enough banked Marks (◈"
-                    + state.banked(player.getUUID()) + "/" + offer.cost() + ").")
+                            + state.banked(player.getUUID()) + "/" + offer.cost() + ").")
                     .withStyle(ChatFormatting.RED));
             return;
         }
@@ -173,7 +153,7 @@ public final class Shop {
                             "The map marks a cache near (" + cache.x + ", " + cache.z + "). Good hunting.")
                     .withStyle(ChatFormatting.GOLD));
         } else {
-            for (OfferItem offerItem : offer.items()) {
+            for (ShopConfigParser.ItemDef offerItem : offer.items()) {
                 Item item = resolveItem(offerItem.itemId());
                 if (item == null) {
                     continue;
@@ -192,36 +172,4 @@ public final class Shop {
         }
         player.playNotifySound(SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.MASTER, 0.8f, 0.8f);
     }
-
-    private static final String DEFAULT_CONFIG = """
-            {
-              "offers": [
-                { "id": "repair_kit", "name": "Repair Kit", "cost": 10, "tier": 0,
-                  "items": [ { "id": "minecraft:iron_ingot", "count": 16 },
-                             { "id": "minecraft:gold_ingot", "count": 8 },
-                             { "id": "minecraft:diamond", "count": 3 } ] },
-                { "id": "field_rations", "name": "Field Rations", "cost": 8, "tier": 0,
-                  "items": [ { "id": "minecraft:cooked_beef", "count": 32 },
-                             { "id": "minecraft:golden_apple", "count": 2 },
-                             { "id": "minecraft:torch", "count": 64 } ] },
-                { "id": "enchanters_satchel", "name": "Enchanter's Satchel", "cost": 25, "tier": 1,
-                  "items": [ { "id": "minecraft:lapis_lazuli", "count": 32 },
-                             { "id": "minecraft:experience_bottle", "count": 24 },
-                             { "id": "minecraft:book", "count": 8 } ] },
-                { "id": "cache_map", "name": "Cache Map (your current ring)", "cost": 20, "tier": 1,
-                  "special": "cache_map", "items": [] },
-                { "id": "voyagers_kit", "name": "Voyager's Kit", "cost": 30, "tier": 2,
-                  "items": [ { "id": "minecraft:ender_pearl", "count": 8 },
-                             { "id": "minecraft:golden_carrot", "count": 16 },
-                             { "id": "minecraft:firework_rocket", "count": 48 } ] },
-                { "id": "hearth_feast", "name": "Hearth Feast", "cost": 40, "tier": 3,
-                  "items": [ { "id": "minecraft:cake", "count": 3 },
-                             { "id": "minecraft:golden_apple", "count": 8 },
-                             { "id": "minecraft:emerald", "count": 16 } ] },
-                { "id": "ashen_keepsake", "name": "Ashen Keepsake (trophy)", "cost": 100, "tier": 4,
-                  "items": [ { "id": "minecraft:wither_skeleton_skull", "count": 1 },
-                             { "id": "minecraft:gold_block", "count": 4 } ] }
-              ]
-            }
-            """;
 }

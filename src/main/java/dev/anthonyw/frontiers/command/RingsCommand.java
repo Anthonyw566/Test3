@@ -13,7 +13,8 @@ import com.mojang.brigadier.suggestion.SuggestionProvider;
 import dev.anthonyw.frontiers.DistantFrontiers;
 import dev.anthonyw.frontiers.contract.ContractBoard;
 import dev.anthonyw.frontiers.economy.Shop;
-import dev.anthonyw.frontiers.elite.EliteModifier;
+import dev.anthonyw.frontiers.core.EliteModifier;
+import dev.anthonyw.frontiers.elite.EliteBehaviors;
 import dev.anthonyw.frontiers.elite.Elites;
 import dev.anthonyw.frontiers.event.SurgeManager;
 import dev.anthonyw.frontiers.heat.HeatManager;
@@ -40,6 +41,7 @@ import net.neoforged.fml.loading.FMLPaths;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -231,17 +233,18 @@ public final class RingsCommand {
     // Admin commands
 
     private static int reload(CommandContext<CommandSourceStack> ctx) {
-        List<String> errors = RingManager.load();
-        ContractBoard.loadConfig();
-        Shop.load();
+        List<String> errors = new ArrayList<>(RingManager.load());
+        errors.addAll(ContractBoard.loadConfig());
+        errors.addAll(Shop.load());
+        errors.addAll(EliteBehaviors.loadConfig());
         if (errors.isEmpty()) {
             int count = RingManager.get() == null ? 0 : RingManager.get().rings().size();
             ctx.getSource().sendSuccess(() -> Component.literal(
-                    "Reloaded " + count + " rings, contracts and shop.").withStyle(ChatFormatting.GREEN), true);
+                    "Reloaded " + count + " rings, contracts, shop and abilities.").withStyle(ChatFormatting.GREEN), true);
             return 1;
         }
         ctx.getSource().sendFailure(Component.literal(
-                "Config has " + errors.size() + " problem(s); keeping the previous ring config:"));
+                "Config has " + errors.size() + " problem(s):"));
         for (String error : errors) {
             ctx.getSource().sendFailure(Component.literal("  - " + error).withStyle(ChatFormatting.RED));
         }

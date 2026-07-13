@@ -48,6 +48,7 @@ public final class DistantFrontiers {
         RingManager.load();
         ContractBoard.loadConfig();
         Shop.load();
+        EliteBehaviors.loadConfig();
     }
 
     private void onRegisterCommands(RegisterCommandsEvent event) {

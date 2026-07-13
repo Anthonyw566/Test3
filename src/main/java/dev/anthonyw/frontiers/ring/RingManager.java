@@ -1,11 +1,9 @@
 package dev.anthonyw.frontiers.ring;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonParser;
 import dev.anthonyw.frontiers.DistantFrontiers;
+import dev.anthonyw.frontiers.core.RingDef;
+import dev.anthonyw.frontiers.core.RingsConfigData;
+import dev.anthonyw.frontiers.core.RingsConfigParser;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -19,49 +17,43 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 /**
- * Loads and owns the ring configuration. Reloadable at runtime via
- * {@code /rings reload}. Lookup is a squared-distance comparison against a
- * sorted radius list — cheap enough to call every second per player and on
- * every hostile spawn.
+ * Loads and owns the ring configuration. Parsing/validation is delegated to
+ * the unit-tested core module; this class resolves colors, dimensions and
+ * entity ids against the running game and answers lookups. Reloadable at
+ * runtime via {@code /rings reload}; a failed load keeps the previous config.
  */
 public final class RingManager {
     private static volatile RingManager instance;
 
-    private final boolean useWorldSpawn;
-    private final double originX;
-    private final double originZ;
-    private final Set<ResourceLocation> dimensions;
+    private final RingsConfigData data;
     private final List<Ring> rings;
-
-    private final double maxHealthMult;
-    private final double maxDamageMult;
-    private final double maxSpeedMult;
-    private final Set<String> excludedSpawnTypes;
+    private final Set<ResourceLocation> dimensions;
     private final Set<ResourceLocation> entityBlacklist;
-    private final boolean skipBosses;
 
-    private RingManager(boolean useWorldSpawn, double originX, double originZ,
-                        Set<ResourceLocation> dimensions, List<Ring> rings,
-                        double maxHealthMult, double maxDamageMult, double maxSpeedMult,
-                        Set<String> excludedSpawnTypes, Set<ResourceLocation> entityBlacklist,
-                        boolean skipBosses) {
-        this.useWorldSpawn = useWorldSpawn;
-        this.originX = originX;
-        this.originZ = originZ;
-        this.dimensions = dimensions;
-        this.rings = rings;
-        this.maxHealthMult = maxHealthMult;
-        this.maxDamageMult = maxDamageMult;
-        this.maxSpeedMult = maxSpeedMult;
-        this.excludedSpawnTypes = excludedSpawnTypes;
-        this.entityBlacklist = entityBlacklist;
-        this.skipBosses = skipBosses;
+    private RingManager(RingsConfigData data) {
+        this.data = data;
+        this.rings = data.rings().stream().map(Ring::of).toList();
+        this.dimensions = new HashSet<>();
+        for (String id : data.dimensions()) {
+            ResourceLocation rl = ResourceLocation.tryParse(id);
+            if (rl != null) {
+                dimensions.add(rl);
+            }
+        }
+        this.entityBlacklist = new HashSet<>();
+        for (String id : data.entityBlacklist()) {
+            ResourceLocation rl = ResourceLocation.tryParse(id);
+            if (rl == null) {
+                DistantFrontiers.LOGGER.warn("rings.json: unparseable entity id {}", id);
+            } else {
+                entityBlacklist.add(rl);
+            }
+        }
     }
 
     /** May be null before the first successful load. */
@@ -69,11 +61,6 @@ public final class RingManager {
         return instance;
     }
 
-    /**
-     * (Re)loads config/distantfrontiers/rings.json, writing the default file
-     * first if missing. Returns human-readable validation errors (empty on a
-     * clean load). A failed load keeps the previous config active.
-     */
     public static synchronized List<String> load() {
         Path dir = FMLPaths.CONFIGDIR.get().resolve(DistantFrontiers.MODID);
         Path file = dir.resolve("rings.json");
@@ -81,131 +68,23 @@ public final class RingManager {
         try {
             Files.createDirectories(dir);
             if (!Files.exists(file)) {
-                Files.writeString(file, DEFAULT_CONFIG);
+                Files.writeString(file, RingsConfigParser.DEFAULT_JSON);
                 DistantFrontiers.LOGGER.info("Wrote default ring config to {}", file);
             }
-            JsonObject root = JsonParser.parseString(Files.readString(file)).getAsJsonObject();
-            RingManager loaded = parse(root, errors);
-            if (errors.isEmpty()) {
-                instance = loaded;
+            RingsConfigParser.Result result = RingsConfigParser.parse(Files.readString(file));
+            errors.addAll(result.errors());
+            if (result.ok()) {
+                instance = new RingManager(result.data());
                 DistantFrontiers.LOGGER.info("Loaded {} rings across {} dimension(s)",
-                        loaded.rings.size(), loaded.dimensions.size());
+                        result.data().rings().size(), result.data().dimensions().size());
             } else {
                 errors.forEach(e -> DistantFrontiers.LOGGER.warn("rings.json: {}", e));
             }
-        } catch (IOException | JsonParseException | IllegalStateException e) {
+        } catch (IOException e) {
             errors.add("could not read rings.json: " + e.getMessage());
             DistantFrontiers.LOGGER.error("Failed to load rings.json", e);
         }
         return errors;
-    }
-
-    private static RingManager parse(JsonObject root, List<String> errors) {
-        boolean useWorldSpawn = true;
-        double ox = 0;
-        double oz = 0;
-        if (root.has("origin")) {
-            JsonObject origin = root.getAsJsonObject("origin");
-            useWorldSpawn = !origin.has("useWorldSpawn") || origin.get("useWorldSpawn").getAsBoolean();
-            ox = origin.has("x") ? origin.get("x").getAsDouble() : 0;
-            oz = origin.has("z") ? origin.get("z").getAsDouble() : 0;
-        }
-
-        Set<ResourceLocation> dimensions = new HashSet<>();
-        if (root.has("dimensions")) {
-            for (JsonElement e : root.getAsJsonArray("dimensions")) {
-                ResourceLocation rl = ResourceLocation.tryParse(e.getAsString());
-                if (rl == null) {
-                    errors.add("invalid dimension id \"" + e.getAsString() + "\"");
-                } else {
-                    dimensions.add(rl);
-                }
-            }
-        }
-        if (dimensions.isEmpty()) {
-            dimensions.add(ResourceLocation.withDefaultNamespace("overworld"));
-        }
-
-        List<Ring> rings = new ArrayList<>();
-        if (root.has("rings")) {
-            for (JsonElement e : root.getAsJsonArray("rings")) {
-                rings.add(Ring.fromJson(e.getAsJsonObject(), errors));
-            }
-        }
-        if (rings.isEmpty()) {
-            errors.add("no rings defined");
-        }
-        rings.sort(Comparator.comparingDouble(r -> r.unbounded() ? Double.MAX_VALUE : r.outerRadius()));
-
-        validate(rings, errors);
-
-        double maxHealth = 2.0;
-        double maxDamage = 2.0;
-        double maxSpeed = 1.25;
-        if (root.has("scalingCaps")) {
-            JsonObject caps = root.getAsJsonObject("scalingCaps");
-            maxHealth = caps.has("maxHealthMult") ? caps.get("maxHealthMult").getAsDouble() : maxHealth;
-            maxDamage = caps.has("maxDamageMult") ? caps.get("maxDamageMult").getAsDouble() : maxDamage;
-            maxSpeed = caps.has("maxSpeedMult") ? caps.get("maxSpeedMult").getAsDouble() : maxSpeed;
-        }
-
-        Set<String> excludedSpawnTypes = new HashSet<>();
-        Set<ResourceLocation> entityBlacklist = new HashSet<>();
-        boolean skipBosses = true;
-        if (root.has("exclusions")) {
-            JsonObject ex = root.getAsJsonObject("exclusions");
-            if (ex.has("spawnTypes")) {
-                for (JsonElement e : ex.getAsJsonArray("spawnTypes")) {
-                    excludedSpawnTypes.add(e.getAsString().toUpperCase(java.util.Locale.ROOT));
-                }
-            }
-            if (ex.has("entityBlacklist")) {
-                for (JsonElement e : ex.getAsJsonArray("entityBlacklist")) {
-                    ResourceLocation rl = ResourceLocation.tryParse(e.getAsString());
-                    if (rl == null) {
-                        errors.add("invalid entity id \"" + e.getAsString() + "\" in entityBlacklist");
-                    } else {
-                        entityBlacklist.add(rl);
-                    }
-                }
-            }
-            skipBosses = !ex.has("skipBosses") || ex.get("skipBosses").getAsBoolean();
-        } else {
-            excludedSpawnTypes.addAll(DEFAULT_EXCLUDED_SPAWN_TYPES);
-        }
-
-        return new RingManager(useWorldSpawn, ox, oz, dimensions, List.copyOf(rings),
-                maxHealth, maxDamage, maxSpeed, excludedSpawnTypes, entityBlacklist, skipBosses);
-    }
-
-    private static void validate(List<Ring> rings, List<String> errors) {
-        double previous = 0;
-        Set<String> seen = new HashSet<>();
-        for (int i = 0; i < rings.size(); i++) {
-            Ring r = rings.get(i);
-            if (!seen.add(r.id())) {
-                errors.add("duplicate ring id \"" + r.id() + "\"");
-            }
-            if (r.unbounded() && i != rings.size() - 1) {
-                errors.add("ring \"" + r.id() + "\" has outerRadius -1 but is not the outermost ring");
-            }
-            if (!r.unbounded()) {
-                if (r.outerRadius() <= previous) {
-                    errors.add("ring \"" + r.id() + "\": outerRadius " + r.outerRadius()
-                            + " does not increase over the previous ring (" + previous + ")");
-                }
-                previous = r.outerRadius();
-            }
-            if (r.eliteChance() < 0 || r.eliteChance() > 1 || r.championChance() < 0 || r.championChance() > 1) {
-                errors.add("ring \"" + r.id() + "\": eliteChance/championChance must be between 0 and 1");
-            }
-            if (r.healthMult() < 0.25 || r.damageMult() < 0.25 || r.speedMult() < 0.25) {
-                errors.add("ring \"" + r.id() + "\": mob multipliers below 0.25 are almost certainly a typo");
-            }
-        }
-        if (!rings.isEmpty() && !rings.get(rings.size() - 1).unbounded()) {
-            errors.add("the outermost ring should have outerRadius -1 so the map has no uncovered edge");
-        }
     }
 
     public boolean appliesTo(ServerLevel level) {
@@ -237,11 +116,11 @@ public final class RingManager {
 
     /** Resolved origin as {x, z}. World spawn is resolved lazily so config can load before worlds do. */
     public double[] origin(ServerLevel level) {
-        if (useWorldSpawn) {
+        if (data.useWorldSpawn()) {
             BlockPos spawn = level.getServer().overworld().getSharedSpawnPos();
             return new double[]{spawn.getX(), spawn.getZ()};
         }
-        return new double[]{originX, originZ};
+        return new double[]{data.originX(), data.originZ()};
     }
 
     public double distanceFromOrigin(ServerLevel level, double x, double z) {
@@ -260,112 +139,46 @@ public final class RingManager {
         return ring.outerRadius() - distanceFromOrigin(level, x, z);
     }
 
+    /** Inner radius of a ring = the previous bounded ring's outer radius. */
+    public double innerRadius(String ringId) {
+        double inner = 0;
+        for (Ring ring : rings) {
+            if (ring.id().equals(ringId)) {
+                return inner;
+            }
+            if (!ring.unbounded()) {
+                inner = ring.outerRadius();
+            }
+        }
+        return inner;
+    }
+
     public List<Ring> rings() {
         return rings;
     }
 
     public double maxHealthMult() {
-        return maxHealthMult;
+        return data.maxHealthMult();
     }
 
     public double maxDamageMult() {
-        return maxDamageMult;
+        return data.maxDamageMult();
     }
 
     public double maxSpeedMult() {
-        return maxSpeedMult;
+        return data.maxSpeedMult();
     }
 
     /** Spawn types that count as "natural" for scaling, elites and safe-zone suppression. */
     public boolean isNaturalSpawnType(MobSpawnType type) {
-        return !excludedSpawnTypes.contains(type.name());
+        return !data.excludedSpawnTypes().contains(type.name());
     }
 
     /** Entities that must never be scaled or promoted: bosses and blacklisted ids. */
     public boolean isExcluded(Mob mob) {
-        if (skipBosses && mob.getType().is(Tags.EntityTypes.BOSSES)) {
+        if (data.skipBosses() && mob.getType().is(Tags.EntityTypes.BOSSES)) {
             return true;
         }
         return entityBlacklist.contains(BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType()));
     }
-
-    private static final List<String> DEFAULT_EXCLUDED_SPAWN_TYPES = List.of(
-            "SPAWNER", "MOB_SUMMONED", "CONVERSION", "BUCKET", "SPAWN_EGG", "COMMAND", "DISPENSER");
-
-    private static final String DEFAULT_CONFIG = """
-            {
-              "origin": { "useWorldSpawn": true, "x": 0, "z": 0 },
-              "dimensions": ["minecraft:overworld"],
-              "rings": [
-                {
-                  "id": "hearth",
-                  "name": "The Hearth",
-                  "color": "green",
-                  "danger": 0,
-                  "outerRadius": 400,
-                  "entryMessage": "You feel the safety of home.",
-                  "suppressHostileSpawns": true,
-                  "mobs": { "healthMult": 1.0, "damageMult": 1.0, "speedMult": 1.0 },
-                  "elites": { "eliteChance": 0.0, "championChance": 0.0, "modifiers": [] },
-                  "heat": { "gainPerMinute": 0.0 }
-                },
-                {
-                  "id": "verge",
-                  "name": "The Verge",
-                  "color": "yellow",
-                  "danger": 1,
-                  "outerRadius": 1200,
-                  "entryMessage": "The lights of home fade behind you.",
-                  "suppressHostileSpawns": false,
-                  "mobs": { "healthMult": 1.15, "damageMult": 1.1, "speedMult": 1.0 },
-                  "elites": { "eliteChance": 0.04, "championChance": 0.05,
-                              "modifiers": ["swift", "stonehide", "corrosive"] },
-                  "heat": { "gainPerMinute": 0.0 }
-                },
-                {
-                  "id": "wildmarch",
-                  "name": "The Wildmarch",
-                  "color": "gold",
-                  "danger": 2,
-                  "outerRadius": 2800,
-                  "entryMessage": "Something out here watches back.",
-                  "suppressHostileSpawns": false,
-                  "mobs": { "healthMult": 1.3, "damageMult": 1.25, "speedMult": 1.05 },
-                  "elites": { "eliteChance": 0.08, "championChance": 0.15,
-                              "modifiers": ["swift", "stonehide", "summoner", "blinkstep", "corrosive", "vengeful"] },
-                  "heat": { "gainPerMinute": 1.0 }
-                },
-                {
-                  "id": "duskreach",
-                  "name": "The Duskreach",
-                  "color": "red",
-                  "danger": 3,
-                  "outerRadius": 5600,
-                  "entryMessage": "The dark here has teeth.",
-                  "suppressHostileSpawns": false,
-                  "mobs": { "healthMult": 1.5, "damageMult": 1.45, "speedMult": 1.1 },
-                  "elites": { "eliteChance": 0.12, "championChance": 0.25, "modifiers": ["*"] },
-                  "heat": { "gainPerMinute": 2.0 }
-                },
-                {
-                  "id": "ashenfront",
-                  "name": "The Ashenfront",
-                  "color": "dark_red",
-                  "danger": 4,
-                  "outerRadius": -1,
-                  "entryMessage": "Turn back - or make history.",
-                  "suppressHostileSpawns": false,
-                  "mobs": { "healthMult": 1.75, "damageMult": 1.7, "speedMult": 1.15 },
-                  "elites": { "eliteChance": 0.16, "championChance": 0.35, "modifiers": ["*"] },
-                  "heat": { "gainPerMinute": 3.0 }
-                }
-              ],
-              "scalingCaps": { "maxHealthMult": 2.0, "maxDamageMult": 2.0, "maxSpeedMult": 1.25 },
-              "exclusions": {
-                "spawnTypes": ["SPAWNER", "MOB_SUMMONED", "CONVERSION", "BUCKET", "SPAWN_EGG", "COMMAND", "DISPENSER"],
-                "entityBlacklist": [],
-                "skipBosses": true
-              }
-            }
-            """;
 }

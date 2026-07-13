@@ -16,10 +16,17 @@ rationale.
   first-discovery announcements and uncharted-territory warnings.
 - **Capped mob scaling** by ring, with farm-proof exclusions (spawner,
   summoned and machine mobs never scale, never pay).
-- **Elites & Champions**: six telegraphed modifiers (Swift, Stonehide,
-  Summoner, Blinkstep, Corrosive, Vengeful) with category pairing rules,
-  generated names whose epithet states the threat, glowing champions, ambient
-  particle telegraphs and kill announcements.
+- **Elites & Champions**: eight telegraphed modifiers with category pairing
+  rules, generated names whose epithet states the threat, glowing champions,
+  ambient particle telegraphs and kill announcements:
+  - Swift, Stonehide, Summoner, Blinkstep, Corrosive, Vengeful
+  - **Warper** — its hits can teleport *you*: flung skyward, position-swapped,
+    scattered… or (rare, Ashenfront, configurable) ripped straight into the
+    Nether.
+  - **Sieger** — mines through your cover to reach you: real crack animations,
+    hardness cap, 32-block lifetime budget, never touches chests/machines,
+    never digs inside the Hearth. Hunters always carry it — hiding from the
+    frontier stops being free. The Hearth is the only truly safe ground.
 - **Expedition Heat**: builds in Ring 2+, jumps on elite kills. High Heat
   brings warned ambushes, then a named Hunter. Field Marks bank only at home —
   with up to +50% bonus scaled by Heat on arrival. Death banks half, no bonus.
@@ -51,9 +58,24 @@ Generated on first run under `config/distantfrontiers/`:
   rates, scaling caps, exclusions
 - `contracts.json` — bounty mob pool, cache loot tables, charter targets
 - `shop.json` — broker stock, prices, tier gating
+- `abilities.json` — Warper proc/cooldown/weights + Nether-rift chance and
+  rings; Sieger hardness cap, block budget, blacklist, drops
 
 All hot-reloadable with `/rings reload` (validation errors are reported and
 the previous config stays active).
+
+## Testing
+
+```
+./run-tests.sh          # core logic tests + (if network allows) mod compile
+./run-tests.sh --rerun  # force re-execution
+```
+
+The `core/` module contains all engine-free logic — ring lookup and config
+validation, Heat/economy math, diminishing returns, modifier pairing rules,
+name generation, cache placement geometry, warp-effect weighting and every
+config parser — with a JUnit suite that runs without Minecraft. The mod layer
+compiles those same sources into the jar and adds only the event glue.
 
 ## Deployment
 

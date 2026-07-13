@@ -1,9 +1,13 @@
 package dev.anthonyw.frontiers.elite;
 
 import dev.anthonyw.frontiers.DistantFrontiers;
+import dev.anthonyw.frontiers.core.EliteModifier;
+import dev.anthonyw.frontiers.core.ModifierPicker;
+import dev.anthonyw.frontiers.core.NameGen;
 import dev.anthonyw.frontiers.event.SurgeManager;
 import dev.anthonyw.frontiers.ring.Ring;
 import dev.anthonyw.frontiers.scaling.SpawnScaling;
+import dev.anthonyw.frontiers.util.McRand;
 import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -18,23 +22,15 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.List;
 
 /**
- * Rolls and applies elite/champion promotions.
- *
- * The generated name IS the telegraph: the epithet always states the mob's
- * headline modifier ("Belgath the Vile" leaves acid, guaranteed). Champions
- * additionally glow. Behavior for the modifiers lives in
- * {@link EliteBehaviors}; attribute-only modifiers are applied here.
+ * Rolls and applies elite/champion promotions. Selection rules (categories,
+ * banned pairs) and naming live in the unit-tested core module; this class
+ * applies the results to real mobs: tags, names, glow and attribute kits.
+ * Ability behavior lives in {@link EliteBehaviors}.
  */
 public final class Elites {
-    private static final String[] NAME_START = {
-            "Kar", "Mor", "Vel", "Dra", "Ul", "Bel", "Naz", "Thra", "Gor", "Sel", "Az", "Ir"};
-    private static final String[] NAME_END = {
-            "gath", "ok", "ira", "un", "eth", "maw", "rik", "osh", "ul", "ez", "ar", "im"};
-
     private Elites() {
     }
 
@@ -64,7 +60,7 @@ public final class Elites {
         if (pool.isEmpty()) {
             pool = Arrays.asList(EliteModifier.values());
         }
-        List<EliteModifier> chosen = pick(pool, champion ? 2 : 1, random);
+        List<EliteModifier> chosen = ModifierPicker.pick(pool, champion ? 2 : 1, new McRand(random));
         if (chosen.isEmpty()) {
             return;
         }
@@ -106,7 +102,7 @@ public final class Elites {
                 addModifier(mob, Attributes.MOVEMENT_SPEED, "stonehide_speed", -0.15,
                         AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL);
             }
-            case VENGEFUL, SUMMONER, BLINKSTEP, CORROSIVE -> {
+            case VENGEFUL, SUMMONER, BLINKSTEP, CORROSIVE, WARPER, SIEGER -> {
                 // behavior-only; handled in EliteBehaviors
             }
         }
@@ -120,34 +116,6 @@ public final class Elites {
             return;
         }
         instance.addPermanentModifier(new AttributeModifier(id, amount, operation));
-    }
-
-    /**
-     * Draws up to {@code count} modifiers: categories must differ and banned
-     * pairs never roll, so champions are spicy but always fair.
-     */
-    private static List<EliteModifier> pick(List<EliteModifier> pool, int count, RandomSource random) {
-        List<EliteModifier> remaining = new ArrayList<>(pool);
-        List<EliteModifier> out = new ArrayList<>();
-        EnumSet<EliteModifier.Category> usedCategories = EnumSet.noneOf(EliteModifier.Category.class);
-        while (out.size() < count && !remaining.isEmpty()) {
-            EliteModifier candidate = remaining.remove(random.nextInt(remaining.size()));
-            if (usedCategories.contains(candidate.category())) {
-                continue;
-            }
-            if (out.stream().anyMatch(existing -> banned(existing, candidate))) {
-                continue;
-            }
-            out.add(candidate);
-            usedCategories.add(candidate.category());
-        }
-        return out;
-    }
-
-    /** Pairs that are individually fine but miserable together. */
-    private static boolean banned(EliteModifier a, EliteModifier b) {
-        return (a == EliteModifier.SUMMONER && b == EliteModifier.VENGEFUL)
-                || (a == EliteModifier.VENGEFUL && b == EliteModifier.SUMMONER);
     }
 
     private static List<EliteModifier> resolvePool(Ring ring) {
@@ -165,8 +133,7 @@ public final class Elites {
     }
 
     public static String generateName(RandomSource random) {
-        return NAME_START[random.nextInt(NAME_START.length)]
-                + NAME_END[random.nextInt(NAME_END.length)];
+        return NameGen.generate(new McRand(random));
     }
 
     public static boolean hasModifier(Mob mob, EliteModifier modifier) {

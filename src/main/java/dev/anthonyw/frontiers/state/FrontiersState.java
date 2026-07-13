@@ -120,19 +120,12 @@ public final class FrontiersState extends SavedData {
 
     /**
      * Registers an elite kill for daily diminishing returns and returns the
-     * payout multiplier: full for the first 10 elites each day, half for the
-     * next 20, then nothing.
+     * payout multiplier (curve lives in the unit-tested core module).
      */
     public double registerEliteKill(UUID player) {
         int kills = dailyEliteKills.merge(player, 1, Integer::sum);
         setDirty();
-        if (kills <= 10) {
-            return 1.0;
-        }
-        if (kills <= 30) {
-            return 0.5;
-        }
-        return 0.0;
+        return dev.anthonyw.frontiers.core.DiminishingReturns.multiplier(kills);
     }
 
     /** True when a new in-game day started since the last board rotation. */
