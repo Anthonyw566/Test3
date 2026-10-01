@@ -114,7 +114,8 @@ await Promise.all(
     const a = from + w * chunk;
     const b = Math.min(to, a + chunk);
     if (a >= b) return;
-    const file = path.join(OUT, `seg_${String(w).padStart(2, '0')}.mp4`);
+    // Segment names are per-output so concurrent renders can't clobber each other.
+    const file = path.join(OUT, `${path.parse(opt('out', 'video.mp4')).name}.seg${String(w).padStart(2, '0')}.mp4`);
     segments[w] = file;
     const { browser, page } = await openStage();
     const { ff, done } = encoder(file);
@@ -134,7 +135,7 @@ await Promise.all(
   }),
 );
 
-const list = path.join(OUT, 'segments.txt');
+const list = path.join(OUT, `${path.parse(opt('out', 'video.mp4')).name}.segments.txt`);
 fs.writeFileSync(list, segments.filter(Boolean).map((s) => `file '${s}'`).join('\n'));
 const target = path.join(OUT, opt('out', 'video.mp4'));
 await new Promise((res, rej) => {
