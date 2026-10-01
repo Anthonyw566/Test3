@@ -6,7 +6,8 @@
 //   node render.mjs --still 23.4 31.0   PNG stills at those times → out/stills/
 //   node render.mjs --from 10 --to 15   render a time range only
 //   node render.mjs --workers 3         parallel browser workers (default: 3)
-//   node render.mjs --scale 0.75        terrain render scale (default: 0.75)
+//   node render.mjs --scale 0.75        terrain render scale (default: 0.75, or 1 with --gpu)
+//   node render.mjs --gpu               use your graphics card (opens a browser window while rendering)
 import { chromium } from 'playwright';
 import { spawn } from 'node:child_process';
 import http from 'node:http';
@@ -28,8 +29,12 @@ const stills = (() => {
   for (let j = i + 1; j < args.length && !args[j].startsWith('--'); j++) ts.push(parseFloat(args[j]));
   return ts;
 })();
+// --gpu: hardware WebGL. Without it, Chromium renders on the CPU with
+// SwiftShader, which works anywhere (including GPU-less cloud machines) but
+// is ~50-100x slower on the terrain shader.
+const GPU = args.includes('--gpu');
 const WORKERS = parseInt(opt('workers', '3'), 10);
-const SCALE = parseFloat(opt('scale', '0.75'));
+const SCALE = parseFloat(opt('scale', GPU ? '1' : '0.75'));
 
 const timeline = JSON.parse(fs.readFileSync(path.join(ROOT, 'timeline.json'), 'utf8'));
 const FPS = timeline.fps;
@@ -38,6 +43,11 @@ const TOTAL = Math.round(timeline.duration * FPS);
 // ---- tiny static server (fonts and ES modules need http, not file://)
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.json': 'application/json', '.woff2': 'font/woff2', '.woff': 'font/woff' };
 const server = http.createServer((req, res) => {
+  if (req.url === '/favicon.ico') {
+    res.writeHead(204);
+    res.end();
+    return;
+  }
   const p = path.join(ROOT, decodeURIComponent(new URL(req.url, 'http://x').pathname));
   if (!p.startsWith(ROOT) || !fs.existsSync(p) || fs.statSync(p).isDirectory()) {
     res.writeHead(404);
@@ -50,17 +60,35 @@ const server = http.createServer((req, res) => {
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
 const URL_ = `http://127.0.0.1:${server.address().port}/render/index.html`;
 
-async function openStage() {
-  const browser = await chromium.launch({
+const CHROME_ARGS = GPU
+  ? [
+    // A headed window is the most reliable way to get the real GPU on
+    // Windows, macOS and Linux desktops; keep it rendering when covered.
+    '--ignore-gpu-blocklist', '--enable-gpu-rasterization', '--disable-gpu-vsync', '--font-render-hinting=none',
+    '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows', '--disable-background-timer-throttling',
+  ]
+  : [
     // Software 2D canvas: on SwiftShader the "accelerated" canvas is ~4x slower.
-    args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--disable-gpu-vsync', '--font-render-hinting=none', '--disable-accelerated-2d-canvas'],
-  });
+    '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--disable-gpu-vsync',
+    '--font-render-hinting=none', '--disable-accelerated-2d-canvas',
+  ];
+let announced = false;
+
+async function openStage() {
+  const browser = await chromium.launch({ headless: !GPU, args: CHROME_ARGS });
   const page = await browser.newPage({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
   page.on('console', (m) => { if (m.type() === 'error') console.error('[page]', m.text()); });
   page.on('pageerror', (e) => console.error('[page error]', e.message));
   await page.goto(URL_);
   await page.waitForFunction(() => typeof window.setup === 'function');
   const info = await page.evaluate((s) => window.setup({ terrainScale: s }), SCALE);
+  if (!announced) {
+    announced = true;
+    console.log(`WebGL renderer: ${info.renderer}`);
+    if (GPU && /swiftshader|llvmpipe|software/i.test(info.renderer)) {
+      console.warn('warning: --gpu was requested but Chromium fell back to software rendering (check GPU drivers).');
+    }
+  }
   return { browser, page, info };
 }
 
@@ -136,7 +164,7 @@ await Promise.all(
 );
 
 const list = path.join(OUT, `${path.parse(opt('out', 'video.mp4')).name}.segments.txt`);
-fs.writeFileSync(list, segments.filter(Boolean).map((s) => `file '${s}'`).join('\n'));
+fs.writeFileSync(list, segments.filter(Boolean).map((s) => `file '${path.basename(s)}'`).join('\n'));
 const target = path.join(OUT, opt('out', 'video.mp4'));
 await new Promise((res, rej) => {
   const ff = spawn('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'concat', '-safe', '0', '-i', list, '-c', 'copy', target], { stdio: 'inherit' });

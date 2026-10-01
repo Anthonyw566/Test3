@@ -57,7 +57,9 @@ window.setup = async (opts = {}) => {
   overlay.height = H;
   const ctx = overlay.getContext('2d');
   env = { tl, G, comp, progs, targets, overlay, ctx };
-  return { floatOK: G.floatOK, frames: Math.round(tl.duration * tl.fps), fps: tl.fps };
+  const dbg = G.gl.getExtension('WEBGL_debug_renderer_info');
+  const renderer = dbg ? G.gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : G.gl.getParameter(G.gl.RENDERER);
+  return { floatOK: G.floatOK, frames: Math.round(tl.duration * tl.fps), fps: tl.fps, renderer };
 };
 
 window.renderFrame = (frame) => {

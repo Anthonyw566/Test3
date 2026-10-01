@@ -29,7 +29,7 @@ render/              the picture: a WebGL2 + Canvas 2D "stage" page
 render.mjs           drives the stage in headless Chromium frame by frame, piping PNGs into x264
 audio/synth.py       synthesis toolkit (oscillators, physical models, filters, reverb, mastering)
 audio/score.py       the score and sound design, composed against timeline.json
-build.sh             score → picture → mux
+build.mjs            one-command build for Windows/macOS/Linux: deps → score → picture → mux
 ```
 
 **One clock.** The edit is cut to a 96 BPM bar grid (1 bar = 2.5 s). The renderer and the score
@@ -72,14 +72,27 @@ lets `render.mjs` split the film across workers.
 
 ## Build it
 
-Needs Node 18+, Python 3.10+ and ffmpeg. No GPU is needed: Chromium falls back to SwiftShader.
+Works on Windows, macOS and Linux. You need **Node 18+**, **Python 3.9+** and **ffmpeg** on your PATH
+(on Windows: `winget install Gyan.FFmpeg`, then open a new terminal).
 
 ```
-./build.sh                          # full film -> distant-frontiers-trailer.mp4
-python3 audio/score.py              # just the soundtrack (≈15 s)
-node render.mjs --still 19 44.2     # PNG stills at those times -> out/stills/
-node render.mjs --from 35 --to 45   # render one sequence
+cd trailer
+npm install
+npm run build:gpu        # renders on your graphics card → distant-frontiers-trailer.mp4
 ```
 
-On a 4-core CPU with no GPU, terrain frames take about 3 s each and everything else under 1.5 s,
-so a full render takes roughly an hour. On a machine with a real GPU it's minutes.
+`build.mjs` installs anything missing (Playwright's Chromium, numpy and scipy), composes the score,
+renders the picture and muxes the two. With `--gpu`, a browser window opens while it renders; leave
+it open. The first log line names the WebGL renderer. If it says SwiftShader or llvmpipe instead of
+your card, Chromium fell back to software rendering and it will warn you.
+
+```
+npm run build                         # CPU only (SwiftShader): works anywhere, about an hour on 4 cores
+node build.mjs --gpu --workers 4      # extra flags pass through to render.mjs
+python3 audio/score.py                # just the soundtrack (≈15 s)
+node render.mjs --gpu --still 19 44.5 # PNG stills at those times → out/stills/
+node render.mjs --gpu --from 35 --to 45 --out gauge.mp4   # one sequence
+```
+
+`--gpu` renders the terrain at full resolution by default (`--scale 1`); CPU mode uses 0.75 to save
+time. On the 4-core, GPU-less cloud machine that made this cut, terrain frames took about 3 s each.
