@@ -289,7 +289,8 @@ export function drawGauge(t, tl, G, progs, target, ctx) {
   ctx.restore();
 
   // ---- type column
-  const shown = clamp(Math.round(v), 0, 100);
+  // Once pinned, the readout holds at 100 even while the needle buzzes.
+  const shown = t >= crashT ? 100 : clamp(Math.round(v), 0, 100);
   const st = stateOf(clamp(v, 0, 100) >= 99.5 ? 100 : shown);
   const x = 1060;
   const colIn = prog(t, t0 + 0.35, 0.8, ease.outCubic);
