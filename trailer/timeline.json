@@ -1,0 +1,69 @@
+{
+  "title": "Distant Frontiers - procedural trailer",
+  "width": 1920,
+  "height": 1080,
+  "fps": 30,
+  "bpm": 96,
+  "duration": 65.0,
+
+  "scenes": [
+    { "id": "open",      "start": 0.0,  "end": 10.0 },
+    { "id": "terrain",   "start": 10.0, "end": 35.0 },
+    { "id": "gauge",     "start": 35.0, "end": 45.0 },
+    { "id": "champions", "start": 45.0, "end": 52.5 },
+    { "id": "bank",      "start": 52.5, "end": 57.5 },
+    { "id": "title",     "start": 57.5, "end": 65.0 }
+  ],
+
+  "rings": [
+    { "id": "hearth",     "name": "The Hearth",     "danger": 0, "inner": 0,    "outer": 400,
+      "color": "#8fd6a0", "message": "You feel the safety of home.",          "start": 10.0, "end": 15.0 },
+    { "id": "verge",      "name": "The Verge",      "danger": 1, "inner": 400,  "outer": 1200,
+      "color": "#f2d57c", "message": "The lights of home fade behind you.",    "start": 15.0, "end": 20.0 },
+    { "id": "wildmarch",  "name": "The Wildmarch",  "danger": 2, "inner": 1200, "outer": 2800,
+      "color": "#f0a531", "message": "Something out here watches back.",       "start": 20.0, "end": 25.0 },
+    { "id": "duskreach",  "name": "The Duskreach",  "danger": 3, "inner": 2800, "outer": 5600,
+      "color": "#e8553f", "message": "The dark here has teeth.",               "start": 25.0, "end": 30.0 },
+    { "id": "ashenfront", "name": "The Ashenfront", "danger": 4, "inner": 5600, "outer": -1,
+      "color": "#b3201f", "message": "Turn back — or make history.",      "start": 30.0, "end": 35.0 }
+  ],
+
+  "cues": {
+    "emberIn": 0.4,
+    "homeSafe": 1.25,
+    "frontierNot": 5.0,
+    "mapRings": [6.25, 6.875, 7.5, 8.125, 8.75],
+    "mapDive": 9.375,
+    "terrainIn": 10.0,
+    "eyes": 21.25,
+    "dropOut": 35.0,
+    "bankHome": 52.5,
+    "bankLines": [53.75, 54.375, 55.0],
+    "bankCountEnd": 56.25,
+    "titleHit": 57.5,
+    "tagline": 58.75,
+    "credits": 60.0,
+    "codeLine": 62.5,
+    "fadeOut": 63.75
+  },
+
+  "heatSteps": [
+    [35.625, 4], [36.25, 9], [36.875, 15], [37.5, 26], [38.125, 31], [38.75, 37], [39.375, 44],
+    [40.0, 52], [40.625, 58], [41.25, 66], [41.875, 77], [42.5, 84], [43.125, 91], [43.75, 100]
+  ],
+  "heatMessages": [
+    { "t": 37.5,  "state": "Restless", "text": "The frontier has noticed you." },
+    { "t": 40.0,  "state": "Hunted",   "text": "You are being watched. Expect trouble." },
+    { "t": 41.875, "state": "Marked",  "text": "You are MARKED. Something is coming." }
+  ],
+
+  "champions": [
+    { "t": 45.0,  "name": "Belgath", "epithet": "the Vile",     "mods": ["Corrosive", "Stonehide"], "fx": "vile" },
+    { "t": 46.25, "name": "Selmaw",  "epithet": "the Unseen",   "mods": ["Blinkstep", "Vengeful"],  "fx": "unseen" },
+    { "t": 47.5,  "name": "Thraosh", "epithet": "the Sunderer", "mods": ["Sieger", "Swift"],        "fx": "sunder" },
+    { "t": 48.75, "name": "Nazira",  "epithet": "the Warping",  "mods": ["Warper", "Summoner"],     "fx": "warp" }
+  ],
+  "hunter": { "t": 50.0, "name": "Karok" },
+
+  "bank": { "field": 240, "heat": 100, "multiplier": 1.5, "banked": 360 }
+}
