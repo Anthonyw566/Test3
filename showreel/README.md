@@ -29,7 +29,7 @@ design is locked to the picture because both read one clock (`src/shared.js`):
 - **Impacts** land on the cut frames; the **lock-in hit** lands on the exact frame the knot snaps shut
 - Risers, reverse cymbals, whooshes, counter ticks, bells, a sidechain-ducked pad, and a short silence before the drop at 0:12.5
 
-Mastered to about −14 LUFS with a −1.3 dBTP peak; no clipped samples.
+Mastered to about −15 LUFS with a true peak of −2.6 dBTP measured on the final AAC; no clipped samples.
 
 ## Rebuild it
 

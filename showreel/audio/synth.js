@@ -556,7 +556,7 @@ for (let i = 0; i < N; i++) {
   L[i] = Math.tanh((L[i] - dcl) * 1.15) / Math.tanh(1.15); R[i] = Math.tanh((R[i] - dcr) * 1.15) / Math.tanh(1.15);
   pkL = Math.max(pkL, Math.abs(L[i]), Math.abs(R[i]));
 }
-const TARGET_DB = process.env.TARGET_PEAK_DB === undefined ? -4.5 : Number(process.env.TARGET_PEAK_DB);
+const TARGET_DB = process.env.TARGET_PEAK_DB === undefined ? -6 : Number(process.env.TARGET_PEAK_DB);
 const norm = db(TARGET_DB) / pkL;
 for (let i = 0; i < N; i++) { L[i] *= norm; R[i] *= norm; }
 
