@@ -444,6 +444,10 @@ def main():
     g = db(-14.0 - loud)
     L, R = L * g, R * g
     L, R = limiter(L, R, ceiling_db=-1.0)
+    # The master filters ring after the hard cut; hold true silence until the
+    # first heartbeat.
+    hush = 1 - np.clip(np.minimum((t - CUT) / 0.003, (CUT + 0.24 - t) / 0.003), 0, 1)
+    L, R = L * hush, R * hush
     print(f'  integrated loudness before gain {loud:.1f} LUFS -> {lufs(L, R):.1f} LUFS, peak {20 * np.log10(np.max(np.abs([L, R]))):.2f} dBFS')
 
     os.makedirs(os.path.join(ROOT, 'out'), exist_ok=True)
