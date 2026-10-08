@@ -1,137 +1,135 @@
 package dev.anthonyw.frontiers.ring;
 
-import dev.anthonyw.frontiers.DistantFrontiers;
-import dev.anthonyw.frontiers.core.RingDef;
-import dev.anthonyw.frontiers.core.RingsConfigData;
-import dev.anthonyw.frontiers.core.RingsConfigParser;
+import dev.anthonyw.frontiers.core.RingsConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobSpawnType;
-import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.common.Tags;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
- * Loads and owns the ring configuration. Parsing/validation is delegated to
- * the unit-tested core module; this class resolves colors, dimensions and
- * entity ids against the running game and answers lookups. Reloadable at
- * runtime via {@code /rings reload}; a failed load keeps the previous config.
+ * Answers "which ring is this position in?". Radial dimensions (the overworld)
+ * get harder with distance from the origin; pinned dimensions (Nether, End)
+ * use one fixed ring everywhere; any other dimension has no rings.
  */
 public final class RingManager {
     private static volatile RingManager instance;
 
-    private final RingsConfigData data;
+    private final RingsConfig config;
     private final List<Ring> rings;
-    private final Set<ResourceLocation> dimensions;
-    private final Set<ResourceLocation> entityBlacklist;
+    private final Set<ResourceLocation> radial = new HashSet<>();
+    private final Map<ResourceLocation, Ring> pinned = new HashMap<>();
+    private final Set<ResourceLocation> entityBlacklist = new HashSet<>();
 
-    private RingManager(RingsConfigData data) {
-        this.data = data;
-        this.rings = data.rings().stream().map(Ring::of).toList();
-        this.dimensions = new HashSet<>();
-        for (String id : data.dimensions()) {
-            ResourceLocation rl = ResourceLocation.tryParse(id);
-            if (rl != null) {
-                dimensions.add(rl);
-            }
-        }
-        this.entityBlacklist = new HashSet<>();
-        for (String id : data.entityBlacklist()) {
-            ResourceLocation rl = ResourceLocation.tryParse(id);
-            if (rl == null) {
-                DistantFrontiers.LOGGER.warn("rings.json: unparseable entity id {}", id);
-            } else {
-                entityBlacklist.add(rl);
-            }
-        }
+    private RingManager(RingsConfig config) {
+        this.config = config;
+        this.rings = config.rings().stream().map(Ring::of).toList();
+        config.radialDimensions().forEach(id -> radial.add(ResourceLocation.parse(id)));
+        config.dimensionRings().forEach((dim, ringId) -> pinned.put(ResourceLocation.parse(dim), byId(ringId)));
+        config.entityBlacklist().forEach(id -> entityBlacklist.add(ResourceLocation.parse(id)));
     }
 
-    /** May be null before the first successful load. */
+    @Nullable
     public static RingManager get() {
         return instance;
     }
 
-    public static synchronized List<String> load() {
-        Path dir = FMLPaths.CONFIGDIR.get().resolve(DistantFrontiers.MODID);
-        Path file = dir.resolve("rings.json");
-        List<String> errors = new ArrayList<>();
-        try {
-            Files.createDirectories(dir);
-            if (!Files.exists(file)) {
-                Files.writeString(file, RingsConfigParser.DEFAULT_JSON);
-                DistantFrontiers.LOGGER.info("Wrote default ring config to {}", file);
-            }
-            RingsConfigParser.Result result = RingsConfigParser.parse(Files.readString(file));
-            errors.addAll(result.errors());
-            if (result.ok()) {
-                instance = new RingManager(result.data());
-                DistantFrontiers.LOGGER.info("Loaded {} rings across {} dimension(s)",
-                        result.data().rings().size(), result.data().dimensions().size());
-            } else {
-                errors.forEach(e -> DistantFrontiers.LOGGER.warn("rings.json: {}", e));
-            }
-        } catch (IOException e) {
-            errors.add("could not read rings.json: " + e.getMessage());
-            DistantFrontiers.LOGGER.error("Failed to load rings.json", e);
+    /** Parses and installs a rings.json; on errors the previous config stays active. */
+    public static List<String> load(String json) {
+        RingsConfig.Result result = RingsConfig.parse(json);
+        List<String> problems = new ArrayList<>();
+        result.errors().forEach(e -> problems.add("rings.json: " + e));
+        if (result.ok()) {
+            instance = new RingManager(result.config());
+        } else if (instance != null) {
+            problems.add("rings.json has errors - keeping the previous ring setup");
         }
-        return errors;
+        return problems;
     }
 
-    public boolean appliesTo(ServerLevel level) {
-        return dimensions.contains(level.dimension().location());
+    public static void setForTesting(RingsConfig config) {
+        instance = new RingManager(config);
     }
 
-    /** The ring at the given position, or null if rings are inactive in this dimension. */
-    public Ring ringAt(ServerLevel level, double x, double z) {
-        if (!appliesTo(level)) {
+    /** Null-safe shortcut: the ring an entity is standing in. */
+    @Nullable
+    public static Ring ringOf(Entity entity) {
+        RingManager mgr = instance;
+        if (mgr == null || !(entity.level() instanceof ServerLevel level)) {
             return null;
         }
-        double d = distanceFromOrigin(level, x, z);
-        for (Ring r : rings) {
-            if (r.unbounded() || d <= r.outerRadius()) {
-                return r;
-            }
-        }
-        return rings.isEmpty() ? null : rings.get(rings.size() - 1);
+        return mgr.ringAt(level, entity.getX(), entity.getZ());
     }
 
+    /** True when the position is in a safe-zone ring. */
+    public static boolean isSafe(ServerLevel level, BlockPos pos) {
+        RingManager mgr = instance;
+        if (mgr == null) {
+            return false;
+        }
+        Ring ring = mgr.ringAt(level, pos.getX() + 0.5, pos.getZ() + 0.5);
+        return ring != null && ring.safeZone();
+    }
+
+    @Nullable
+    public Ring ringAt(ServerLevel level, double x, double z) {
+        ResourceLocation dim = level.dimension().location();
+        if (radial.contains(dim)) {
+            double d = distanceFromOrigin(level, x, z);
+            for (Ring ring : rings) {
+                if (ring.unbounded() || d <= ring.outerRadius()) {
+                    return ring;
+                }
+            }
+            return rings.isEmpty() ? null : rings.get(rings.size() - 1);
+        }
+        return pinned.get(dim);
+    }
+
+    public boolean isRadial(ServerLevel level) {
+        return radial.contains(level.dimension().location());
+    }
+
+    @Nullable
     public Ring byId(String id) {
-        for (Ring r : rings) {
-            if (r.id().equals(id)) {
-                return r;
+        for (Ring ring : rings) {
+            if (ring.id().equals(id)) {
+                return ring;
             }
         }
         return null;
     }
 
-    /** Resolved origin as {x, z}. World spawn is resolved lazily so config can load before worlds do. */
+    /** {x, z} of the ring origin (world spawn by default, resolved live). */
     public double[] origin(ServerLevel level) {
-        if (data.useWorldSpawn()) {
+        if (config.useWorldSpawn()) {
             BlockPos spawn = level.getServer().overworld().getSharedSpawnPos();
-            return new double[]{spawn.getX(), spawn.getZ()};
+            return new double[]{spawn.getX() + 0.5, spawn.getZ() + 0.5};
         }
-        return new double[]{data.originX(), data.originZ()};
+        return new double[]{config.originX(), config.originZ()};
     }
 
     public double distanceFromOrigin(ServerLevel level, double x, double z) {
         double[] o = origin(level);
-        double dx = x - o[0];
-        double dz = z - o[1];
-        return Math.sqrt(dx * dx + dz * dz);
+        return Math.hypot(x - o[0], z - o[1]);
     }
 
-    /** Blocks remaining until the current ring's outer boundary, or -1 in the unbounded ring. */
+    /** Blocks until the next ring outward, or -1 if there is none here. */
     public double blocksToNextRing(ServerLevel level, double x, double z) {
+        if (!isRadial(level)) {
+            return -1;
+        }
         Ring ring = ringAt(level, x, z);
         if (ring == null || ring.unbounded()) {
             return -1;
@@ -139,44 +137,26 @@ public final class RingManager {
         return ring.outerRadius() - distanceFromOrigin(level, x, z);
     }
 
-    /** Inner radius of a ring = the previous bounded ring's outer radius. */
-    public double innerRadius(String ringId) {
-        double inner = 0;
-        for (Ring ring : rings) {
-            if (ring.id().equals(ringId)) {
-                return inner;
-            }
-            if (!ring.unbounded()) {
-                inner = ring.outerRadius();
-            }
-        }
-        return inner;
-    }
-
     public List<Ring> rings() {
         return rings;
     }
 
     public double maxHealthMult() {
-        return data.maxHealthMult();
+        return config.maxHealthMult();
     }
 
     public double maxDamageMult() {
-        return data.maxDamageMult();
+        return config.maxDamageMult();
     }
 
-    public double maxSpeedMult() {
-        return data.maxSpeedMult();
-    }
-
-    /** Spawn types that count as "natural" for scaling, elites and safe-zone suppression. */
+    /** Natural-ish spawns get ring treatment; spawners, eggs, commands and farms don't. */
     public boolean isNaturalSpawnType(MobSpawnType type) {
-        return !data.excludedSpawnTypes().contains(type.name());
+        return !config.excludedSpawnTypes().contains(type.name());
     }
 
-    /** Entities that must never be scaled or promoted: bosses and blacklisted ids. */
+    /** Bosses and blacklisted mobs are never scaled, promoted or made to dig. */
     public boolean isExcluded(Mob mob) {
-        if (data.skipBosses() && mob.getType().is(Tags.EntityTypes.BOSSES)) {
+        if (config.skipBosses() && mob.getType().is(Tags.EntityTypes.BOSSES)) {
             return true;
         }
         return entityBlacklist.contains(BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType()));

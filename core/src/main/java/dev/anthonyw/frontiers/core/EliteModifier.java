@@ -3,37 +3,37 @@ package dev.anthonyw.frontiers.core;
 import java.util.Locale;
 
 /**
- * The elite modifier library. The epithet doubles as the player-facing
- * telegraph, and the category keeps champion pairings fair - a champion rolls
- * two modifiers from different categories, so "fast AND teleporting" can
- * never happen. Behavior lives in the mod layer; this enum is the contract.
+ * The five elite abilities. Each one is built to create a moment between
+ * players, not just a bigger health bar. The epithet becomes part of the
+ * mob's name ("Karok the Warping"), so a glance tells you what you're facing;
+ * the tip is shown to a player the first time each ability hits them.
  */
 public enum EliteModifier {
-    SWIFT("the Swift", Category.MOBILITY),           // +35% speed, -25% health
-    STONEHIDE("the Stoneskinned", Category.DEFENSE), // +armor, +KB resist, -15% speed
-    SUMMONER("the Caller", Category.SUPPORT),        // periodically calls 2 weak minions
-    BLINKSTEP("the Unseen", Category.MOBILITY),      // short teleport when hit, 6s cooldown
-    CORROSIVE("the Vile", Category.OFFENSE),         // lingering harming cloud on death
-    VENGEFUL("the Wrathful", Category.OFFENSE),      // enrages briefly when an ally dies
-    WARPER("the Warping", Category.MOBILITY),        // hits can teleport the PLAYER
-    SIEGER("the Sunderer", Category.BREACH);         // breaks blocks to reach hiding players
-
-    public enum Category { MOBILITY, DEFENSE, OFFENSE, SUPPORT, BREACH }
+    WARPER("the Warping",
+            "Its hits can teleport you: flung skyward, swapped with a nearby friend, or thrown aside."),
+    THIEF("the Thief",
+            "It steals an item from your hotbar and runs. Kill it to get your item back."),
+    MAGNETIC("the Magnetic",
+            "Every few seconds it drags everyone nearby toward itself. Watch the sparks."),
+    VOLATILE("the Volatile",
+            "It explodes a moment after it dies. Back off when it drops."),
+    WARDED("the Warded",
+            "It shrugs off hits from whoever it's chasing. Someone ELSE has to hurt it.");
 
     private final String epithet;
-    private final Category category;
+    private final String tip;
 
-    EliteModifier(String epithet, Category category) {
+    EliteModifier(String epithet, String tip) {
         this.epithet = epithet;
-        this.category = category;
+        this.tip = tip;
     }
 
     public String epithet() {
         return epithet;
     }
 
-    public Category category() {
-        return category;
+    public String tip() {
+        return tip;
     }
 
     public String id() {
@@ -41,8 +41,11 @@ public enum EliteModifier {
     }
 
     public static EliteModifier byId(String id) {
+        if (id == null) {
+            return null;
+        }
         try {
-            return valueOf(id.toUpperCase(Locale.ROOT));
+            return valueOf(id.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             return null;
         }

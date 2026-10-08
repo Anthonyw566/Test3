@@ -2,14 +2,11 @@ package dev.anthonyw.frontiers.ring;
 
 import dev.anthonyw.frontiers.core.RingDef;
 import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
 
 import java.util.List;
 
-/**
- * MC-side view of a ring: the engine-free {@link RingDef} from the core module
- * plus its resolved chat color. All the parsing and validation lives (and is
- * unit-tested) in core.
- */
+/** A ring from the config plus its resolved chat color. */
 public record Ring(RingDef def, ChatFormatting color) {
     public static Ring of(RingDef def) {
         ChatFormatting color = ChatFormatting.getByName(def.colorName());
@@ -28,20 +25,20 @@ public record Ring(RingDef def, ChatFormatting color) {
         return def.danger();
     }
 
-    public double outerRadius() {
-        return def.outerRadius();
+    public boolean safeZone() {
+        return def.safeZone();
     }
 
     public boolean unbounded() {
         return def.unbounded();
     }
 
-    public String entryMessage() {
-        return def.entryMessage();
+    public double outerRadius() {
+        return def.outerRadius();
     }
 
-    public boolean suppressHostileSpawns() {
-        return def.suppressHostileSpawns();
+    public String entryMessage() {
+        return def.entryMessage();
     }
 
     public double healthMult() {
@@ -52,8 +49,8 @@ public record Ring(RingDef def, ChatFormatting color) {
         return def.damageMult();
     }
 
-    public double speedMult() {
-        return def.speedMult();
+    public double digChance() {
+        return def.digChance();
     }
 
     public double eliteChance() {
@@ -68,7 +65,13 @@ public record Ring(RingDef def, ChatFormatting color) {
         return def.modifiers();
     }
 
-    public double heatGainPerMinute() {
-        return def.heatGainPerMinute();
+    public String eliteLoot() {
+        return def.eliteLoot();
+    }
+
+    /** "The Duskreach ☠☠☠" in the ring's color. */
+    public Component title() {
+        String skulls = danger() > 0 ? "  " + "☠".repeat(danger()) : "";
+        return Component.literal(name() + skulls).withStyle(color);
     }
 }

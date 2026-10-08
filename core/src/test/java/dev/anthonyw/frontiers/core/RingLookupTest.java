@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 class RingLookupTest {
     private static final List<RingDef> RINGS =
-            RingsConfigParser.parse(RingsConfigParser.DEFAULT_JSON).data().rings();
+            RingsConfig.parse(RingsConfig.DEFAULT_JSON).config().rings();
 
     @Test
     void originIsTheHearth() {

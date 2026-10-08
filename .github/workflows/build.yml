@@ -11,6 +11,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
 
@@ -20,18 +23,20 @@ jobs:
           java-version: 21
 
       - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-cleanup: never
 
       - name: Core logic tests
-        run: ./gradlew :core:test --console=plain
+        run: ./gradlew :core:test --console=plain 2>&1 | tee core.log; exit ${PIPESTATUS[0]}
 
       - name: Compile mod
-        run: ./gradlew compileJava --console=plain
+        run: ./gradlew compileJava --console=plain 2>&1 | tee compile.log; exit ${PIPESTATUS[0]}
 
       - name: Build jar
-        run: ./gradlew build -x :core:test --console=plain
+        run: ./gradlew build -x :core:test --console=plain 2>&1 | tee build.log; exit ${PIPESTATUS[0]}
 
       - name: In-game tests (headless GameTest server)
-        run: ./gradlew runGameTestServer --console=plain
+        run: ./gradlew runGameTestServer --console=plain 2>&1 | tee gametest.log; exit ${PIPESTATUS[0]}
 
       - name: Upload jar
         uses: actions/upload-artifact@v4
@@ -47,5 +52,18 @@ jobs:
           gh release delete latest --cleanup-tag -y || true
           gh release create latest build/libs/distantfrontiers-*.jar \
             --prerelease --target "$GITHUB_SHA" \
-            --title "Distant Frontiers — latest build" \
-            --notes "Automatic build of ${GITHUB_SHA::7}. Passed core tests and in-game tests. Drop the jar into your ATM10 server's mods/ folder (server only)."
+            --title "Distant Frontiers - latest build" \
+            --notes "Automatic build of ${GITHUB_SHA::7}. Passed the core logic tests and the in-game GameTests. Server-side only: drop the jar into your ATM10 server's mods/ folder."
+
+      # Short, greppable summary at the very end of the log.
+      - name: Report
+        if: always()
+        run: |
+          echo "=================== CORE TESTS ==================="
+          grep -E "tests completed|FAILED|BUILD (SUCCESSFUL|FAILED)" core.log 2>/dev/null | head -40 || true
+          echo "=================== COMPILE ==================="
+          grep -E "error:|BUILD (SUCCESSFUL|FAILED)" -A4 compile.log 2>/dev/null | head -200 || true
+          echo "=================== GAMETESTS ==================="
+          grep -iE "gametest|tests? (passed|failed)|failed!|passed!|required test|assert|exception|caused by|BUILD (SUCCESSFUL|FAILED)" gametest.log 2>/dev/null \
+            | grep -v "DEBUG" | head -200 || true
+          echo "=================== END ==================="
