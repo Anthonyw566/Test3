@@ -1,13 +1,15 @@
 package dev.anthonyw.frontiers.ring;
 
+import dev.anthonyw.frontiers.fx.Fx;
+import dev.anthonyw.frontiers.fx.Glyphs;
+import dev.anthonyw.frontiers.fx.Sfx;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -46,18 +48,21 @@ public final class BoundaryWatcher {
         long now = player.serverLevel().getGameTime();
         if (now - lastTitle.getOrDefault(id, Long.MIN_VALUE / 2) >= TITLE_COOLDOWN_TICKS) {
             lastTitle.put(id, now);
-            player.connection.send(new ClientboundSetTitlesAnimationPacket(10, 60, 20));
+            // With the resource pack: the ring's emblem punches in, name + flavor below it.
+            MutableComponent subtitle = Component.literal(ring.name()).withStyle(ring.color());
             if (!ring.entryMessage().isBlank()) {
-                player.connection.send(new ClientboundSetSubtitleTextPacket(
-                        Component.literal(ring.entryMessage()).withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC)));
+                subtitle.append(Component.literal("  " + ring.entryMessage()).withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC));
             }
-            player.connection.send(new ClientboundSetTitleTextPacket(
-                    Component.literal(ring.name()).withStyle(ring.color())));
-            if (deeper) {
-                player.playNotifySound(SoundEvents.ELDER_GUARDIAN_CURSE, SoundSource.MASTER, 0.3f, 1.6f);
-            } else {
-                player.playNotifySound(SoundEvents.PLAYER_LEVELUP, SoundSource.MASTER, 0.5f, 1.4f);
+            if (!Fx.flipbook(player, Glyphs.ringReveal(ring.id()), Glyphs.RING_REVEAL_FRAMES, subtitle, 50)) {
+                player.connection.send(new ClientboundSetTitlesAnimationPacket(10, 60, 20));
+                if (!ring.entryMessage().isBlank()) {
+                    player.connection.send(new ClientboundSetSubtitleTextPacket(
+                            Component.literal(ring.entryMessage()).withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC)));
+                }
+                player.connection.send(new ClientboundSetTitleTextPacket(
+                        Component.literal(ring.name()).withStyle(ring.color())));
             }
+            Fx.soundTo(player, deeper ? Sfx.RING_DEEPER : Sfx.RING_HOME);
         }
         player.displayClientMessage(ring.title(), true);
     }

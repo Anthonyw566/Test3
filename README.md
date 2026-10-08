@@ -20,6 +20,16 @@ meet an elite, or open the world to LAN with a friend to try Downed and the Hex.
 
 Type `/rings help` in game for the rules, `/rings` to see where you are.
 
+Watch the [48-second trailer](media/trailer.mp4) to see it all in action.
+
+### Sounds, icons and animations (optional resource pack)
+When players join, the server offers a small resource pack (300 KB): custom
+synthesized sounds for every mechanic, pixel-art ability icons, and short
+title animations (a ring's emblem punching in, the Hex skull forming, a heart
+cracking when you go down). Players just click **Proceed**. Anyone who
+declines keeps vanilla sounds - nothing breaks. Turn it off, make it
+required, or self-host it under `resourcePack` in `mechanics.json`.
+
 ## How it plays
 
 ### The rings
@@ -111,6 +121,7 @@ the server. A bad value falls back to its default.
 | The Hex is too brutal | `hex.durationSeconds`, `hex.ambushEverySeconds`, `hex.ambushBaseSize` |
 | Nobody ever wants the Hex | raise `hex.survivalXp`, keep `doubleDrops` on |
 | Warpers too chaotic | `warper.procChance`, or set `swapWeight` to 0 to stop friend-swaps |
+| Don't want the resource pack offered | `mechanics.json` → `"resourcePack": { "enabled": false }` |
 | An ATM10 dimension should be dangerous | `rings.json` → `dimensionRings`, e.g. `"allthemodium:the_other": "duskreach"` |
 
 ## Development
@@ -130,6 +141,8 @@ the server. A bad value falls back to its default.
   loot drops when it dies, a digger breaks into a bunker (but not in the
   Hearth), natural spawns are scaled exactly once, and so on.
 - CI (`.github/workflows/build.yml`) runs everything on every push and
-  publishes the jar as the `latest` pre-release.
+  publishes the jar and the resource pack as the `latest` pre-release.
+- `tools/` regenerates all sounds, art and the trailer from code (see
+  [`tools/README.md`](tools/README.md)).
 
 See [`DESIGN.md`](DESIGN.md) for why it works the way it does.

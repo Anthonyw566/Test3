@@ -3,6 +3,9 @@ package dev.anthonyw.frontiers.player;
 import dev.anthonyw.frontiers.config.Configs;
 import dev.anthonyw.frontiers.core.HexRules;
 import dev.anthonyw.frontiers.core.MechanicsConfig;
+import dev.anthonyw.frontiers.fx.Fx;
+import dev.anthonyw.frontiers.fx.Glyphs;
+import dev.anthonyw.frontiers.fx.Sfx;
 import dev.anthonyw.frontiers.mob.EliteRewards;
 import dev.anthonyw.frontiers.mob.Elites;
 import dev.anthonyw.frontiers.ring.Ring;
@@ -12,14 +15,13 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.ExperienceOrb;
@@ -84,16 +86,12 @@ public final class HexManager {
         if (before > 0) {
             return;
         }
-        player.connection.send(new ClientboundSetTitlesAnimationPacket(5, 50, 15));
-        player.connection.send(new ClientboundSetSubtitleTextPacket(Component.literal(
-                "Everything is coming for you. Survive it, or hit a friend to pass it on.")
-                .withStyle(ChatFormatting.GRAY)));
-        player.connection.send(new ClientboundSetTitleTextPacket(
-                Component.literal("HEXED").withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.BOLD)));
-        player.playNotifySound(SoundEvents.WITHER_SPAWN, SoundSource.MASTER, 0.4f, 1.6f);
-        player.serverLevel().getServer().getPlayerList().broadcastSystemMessage(Component.literal(
-                        "☠ " + player.getName().getString() + " is HEXED" + reason + ". Stay close... or don't.")
-                .withStyle(ChatFormatting.DARK_PURPLE), false);
+        Component hint = Component.literal("Everything is coming for you. Survive it, or hit a friend to pass it on.")
+                .withStyle(ChatFormatting.GRAY);
+        showHexTitle(player, Component.literal("HEXED"), hint);
+        Fx.soundTo(player, Sfx.HEX_CURSE);
+        broadcast(player.serverLevel().getServer(), "☠ " + player.getName().getString() + " is HEXED" + reason
+                + ". Stay close... or don't.");
     }
 
     public void clear(ServerPlayer player) {
@@ -145,17 +143,12 @@ public final class HexManager {
         store(to, ticks);
         nextAmbush.put(to.getUUID(), to.serverLevel().getGameTime() + cfg.firstAmbushTicks());
 
-        to.connection.send(new ClientboundSetTitlesAnimationPacket(5, 40, 10));
-        to.connection.send(new ClientboundSetSubtitleTextPacket(Component.literal(
+        showHexTitle(to, Component.literal("TAG - YOU'RE HEXED"), Component.literal(
                 from.getName().getString() + " passed it to you. " + HexRules.formatTicks(ticks) + " left.")
-                .withStyle(ChatFormatting.GRAY)));
-        to.connection.send(new ClientboundSetTitleTextPacket(
-                Component.literal("TAG - YOU'RE HEXED").withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.BOLD)));
-        to.playNotifySound(SoundEvents.WITHER_SPAWN, SoundSource.MASTER, 0.4f, 1.8f);
-        from.playNotifySound(SoundEvents.PLAYER_LEVELUP, SoundSource.MASTER, 0.5f, 0.6f);
-        from.serverLevel().getServer().getPlayerList().broadcastSystemMessage(Component.literal(
-                        "☠ " + from.getName().getString() + " passed the Hex to " + to.getName().getString() + "!")
-                .withStyle(ChatFormatting.DARK_PURPLE), false);
+                .withStyle(ChatFormatting.GRAY));
+        Fx.sound(to.serverLevel(), to.position(), Sfx.HEX_PASS);
+        broadcast(from.serverLevel().getServer(), "☠ " + from.getName().getString() + " passed the Hex to "
+                + to.getName().getString() + "!");
     }
 
     /** Die hexed and it jumps to whoever is nearest (downed handling happens first; real deaths only). */
@@ -176,14 +169,12 @@ public final class HexManager {
         ServerPlayer next = HexRules.nearest(candidates, cfg.jumpRange());
         MinecraftServer server = dead.serverLevel().getServer();
         if (next == null) {
-            server.getPlayerList().broadcastSystemMessage(Component.literal(
-                    "☠ The Hex dies with " + dead.getName().getString() + ".").withStyle(ChatFormatting.DARK_PURPLE), false);
+            broadcast(server, "☠ The Hex dies with " + dead.getName().getString() + ".");
             return;
         }
         give(next, HexRules.jumpDuration(ticks, cfg.minJumpTicks()), "");
-        server.getPlayerList().broadcastSystemMessage(Component.literal("☠ The Hex leaves "
-                        + dead.getName().getString() + "'s body and finds " + next.getName().getString() + "!")
-                .withStyle(ChatFormatting.DARK_PURPLE), false);
+        broadcast(server, "☠ The Hex leaves " + dead.getName().getString() + "'s body and finds "
+                + next.getName().getString() + "!");
     }
 
     // ------------------------------------------------------------------ while hexed
@@ -214,10 +205,10 @@ public final class HexManager {
                 maybeAmbush(player, ring, cfg);
             }
             if (!DownedManager.isDowned(player)) {
-                player.displayClientMessage(Component.literal(safe
+                player.displayClientMessage(Fx.icon(player, Glyphs.HEX).append(Component.literal(safe
                                 ? "☠ HEXED (paused in " + ring.name() + ")  ·  hit a friend to pass it"
                                 : "☠ HEXED " + HexRules.formatTicks(after) + "  ·  hit a friend to pass it")
-                        .withStyle(ChatFormatting.DARK_PURPLE), true);
+                        .withStyle(ChatFormatting.DARK_PURPLE)), true);
             }
             if (after == 0) {
                 survived(player, ring);
@@ -261,7 +252,7 @@ public final class HexManager {
             }
         }
         if (spawned > 0) {
-            level.playSound(null, player.blockPosition(), SoundEvents.RAID_HORN.value(), SoundSource.HOSTILE, 0.6f, 1.4f);
+            Fx.sound(level, player.position(), Sfx.HEX_AMBUSH);
             player.displayClientMessage(Component.literal("The Hex calls them to you...")
                     .withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.ITALIC), true);
         }
@@ -277,10 +268,11 @@ public final class HexManager {
                         player.getX(), player.getY() + 0.5, player.getZ(), stack));
             }
         }
-        player.playNotifySound(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, SoundSource.MASTER, 0.7f, 1.0f);
-        player.serverLevel().getServer().getPlayerList().broadcastSystemMessage(Component.literal(
-                        "★ " + player.getName().getString() + " outlasted the Hex!")
-                .withStyle(ChatFormatting.GOLD), false);
+        Fx.soundTo(player, Sfx.HEX_SURVIVE);
+        for (ServerPlayer viewer : player.serverLevel().getServer().getPlayerList().getPlayers()) {
+            viewer.sendSystemMessage(Fx.icon(viewer, Glyphs.CHAMPION).append(Component.literal(
+                    "★ " + player.getName().getString() + " outlasted the Hex!").withStyle(ChatFormatting.GOLD)));
+        }
     }
 
     // ------------------------------------------------------------------ greed
@@ -307,6 +299,24 @@ public final class HexManager {
         if (Configs.mechanics().hex().doubleDrops() && event.getAttackingPlayer() instanceof ServerPlayer killer
                 && remaining(killer) > 0 && !(event.getEntity() instanceof ServerPlayer)) {
             event.setDroppedExperience(event.getDroppedExperience() * 2);
+        }
+    }
+
+    /** Hex flipbook for pack users, a bold purple title for everyone else. */
+    private static void showHexTitle(ServerPlayer player, Component title, Component hint) {
+        MutableComponent styled = title.copy().withStyle(ChatFormatting.DARK_PURPLE, ChatFormatting.BOLD);
+        if (!Fx.flipbook(player, Glyphs.HEX_ANIM, Glyphs.HEX_FRAMES, styled.copy().append("  ").append(hint), 50)) {
+            player.connection.send(new ClientboundSetTitlesAnimationPacket(5, 50, 15));
+            player.connection.send(new ClientboundSetSubtitleTextPacket(hint));
+            player.connection.send(new ClientboundSetTitleTextPacket(styled));
+        }
+    }
+
+    /** Server-wide Hex news, with the Hex icon for players who have the pack. */
+    private static void broadcast(MinecraftServer server, String text) {
+        for (ServerPlayer viewer : server.getPlayerList().getPlayers()) {
+            viewer.sendSystemMessage(Fx.icon(viewer, Glyphs.HEX)
+                    .append(Component.literal(text).withStyle(ChatFormatting.DARK_PURPLE)));
         }
     }
 

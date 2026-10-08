@@ -5,6 +5,9 @@ import dev.anthonyw.frontiers.config.Configs;
 import dev.anthonyw.frontiers.core.DownedState;
 import dev.anthonyw.frontiers.core.HexRules;
 import dev.anthonyw.frontiers.core.MechanicsConfig;
+import dev.anthonyw.frontiers.fx.Fx;
+import dev.anthonyw.frontiers.fx.Glyphs;
+import dev.anthonyw.frontiers.fx.Sfx;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.Holder;
 import net.minecraft.core.particles.ParticleTypes;
@@ -15,8 +18,6 @@ import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -119,18 +120,23 @@ public final class DownedManager {
         modifier(player, Attributes.ATTACK_DAMAGE, NO_HIT, -1.0);
         modifier(player, Attributes.BLOCK_BREAK_SPEED, NO_MINE, -1.0);
 
-        player.connection.send(new ClientboundSetTitlesAnimationPacket(5, 50, 10));
-        player.connection.send(new ClientboundSetSubtitleTextPacket(Component.literal(
-                "Hold on - a friend can crouch next to you to revive you").withStyle(ChatFormatting.GRAY)));
-        player.connection.send(new ClientboundSetTitleTextPacket(
-                Component.literal("YOU'RE DOWN").withStyle(ChatFormatting.DARK_RED, ChatFormatting.BOLD)));
-        player.serverLevel().playSound(null, player.blockPosition(), SoundEvents.PLAYER_HURT_SWEET_BERRY_BUSH,
-                SoundSource.PLAYERS, 1.0f, 0.6f);
+        Component hint = Component.literal("Hold on - a friend can crouch next to you to revive you")
+                .withStyle(ChatFormatting.GRAY);
+        if (!Fx.flipbook(player, Glyphs.DOWNED_ANIM, Glyphs.DOWNED_FRAMES,
+                Component.literal("YOU'RE DOWN  ").withStyle(ChatFormatting.DARK_RED, ChatFormatting.BOLD).append(hint), 60)) {
+            player.connection.send(new ClientboundSetTitlesAnimationPacket(5, 50, 10));
+            player.connection.send(new ClientboundSetSubtitleTextPacket(hint));
+            player.connection.send(new ClientboundSetTitleTextPacket(
+                    Component.literal("YOU'RE DOWN").withStyle(ChatFormatting.DARK_RED, ChatFormatting.BOLD)));
+        }
+        Fx.sound(player.serverLevel(), player.position(), Sfx.DOWNED_FALL);
         MinecraftServer server = player.serverLevel().getServer();
-        server.getPlayerList().broadcastSystemMessage(Component.literal("✚ " + player.getName().getString()
-                        + " is down at " + player.blockPosition().toShortString()
-                        + "! Crouch next to them to revive (" + HexRules.formatTicks(cfg.bleedOutTicks()) + ").")
-                .withStyle(ChatFormatting.RED), false);
+        for (ServerPlayer viewer : server.getPlayerList().getPlayers()) {
+            viewer.sendSystemMessage(Fx.icon(viewer, Glyphs.DOWNED).append(Component.literal("✚ "
+                            + player.getName().getString() + " is down at " + player.blockPosition().toShortString()
+                            + "! Crouch next to them to revive (" + HexRules.formatTicks(cfg.bleedOutTicks()) + ").")
+                    .withStyle(ChatFormatting.RED)));
+        }
     }
 
     // ------------------------------------------------------------------ while down
@@ -233,13 +239,16 @@ public final class DownedManager {
         clearEffects(player);
         player.setHealth(Math.min(player.getMaxHealth(), cfg.reviveHealth()));
         player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 60, 2));
-        player.serverLevel().playSound(null, player.blockPosition(), SoundEvents.TOTEM_USE,
-                SoundSource.PLAYERS, 0.6f, 1.3f);
+        Fx.sound(player.serverLevel(), player.position(), Sfx.DOWNED_REVIVE);
+        Fx.flipbook(player, Glyphs.REVIVE_ANIM, Glyphs.REVIVE_FRAMES,
+                Component.literal(reviver.getName().getString() + " pulled you back up").withStyle(ChatFormatting.GREEN), 30);
         player.serverLevel().sendParticles(ParticleTypes.HEART, player.getX(), player.getY() + 1.2, player.getZ(),
                 8, 0.4, 0.4, 0.4, 0.1);
-        player.serverLevel().getServer().getPlayerList().broadcastSystemMessage(Component.literal(
-                        "✚ " + reviver.getName().getString() + " pulled " + player.getName().getString() + " back up!")
-                .withStyle(ChatFormatting.GREEN), false);
+        for (ServerPlayer viewer : player.serverLevel().getServer().getPlayerList().getPlayers()) {
+            viewer.sendSystemMessage(Fx.icon(viewer, Glyphs.REVIVE).append(Component.literal("✚ "
+                            + reviver.getName().getString() + " pulled " + player.getName().getString() + " back up!")
+                    .withStyle(ChatFormatting.GREEN)));
+        }
     }
 
     /** Ends the downed state with a real death (keeps the original cause for the death message). */

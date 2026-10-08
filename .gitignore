@@ -15,3 +15,8 @@ runs/
 .settings/
 bin/
 eclipse/
+
+# Python
+__pycache__/
+*.pyc
+.venv/

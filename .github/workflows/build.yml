@@ -38,11 +38,13 @@ jobs:
       - name: In-game tests (headless GameTest server)
         run: ./gradlew runGameTestServer --console=plain 2>&1 | tee gametest.log; exit ${PIPESTATUS[0]}
 
-      - name: Upload jar
+      - name: Upload jar and resource pack
         uses: actions/upload-artifact@v4
         with:
-          name: distantfrontiers-jar
-          path: build/libs/distantfrontiers-*.jar
+          name: distantfrontiers
+          path: |
+            build/libs/distantfrontiers-*.jar
+            build/pack/distantfrontiers-pack.zip
 
       - name: Publish "latest" pre-release
         if: github.event_name == 'push'
@@ -50,10 +52,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release delete latest --cleanup-tag -y || true
-          gh release create latest build/libs/distantfrontiers-*.jar \
+          gh release create latest build/libs/distantfrontiers-*.jar build/pack/distantfrontiers-pack.zip \
             --prerelease --target "$GITHUB_SHA" \
             --title "Distant Frontiers - latest build" \
-            --notes "Automatic build of ${GITHUB_SHA::7}. Passed the core logic tests and the in-game GameTests. Server-side only: drop the jar into your ATM10 server's mods/ folder."
+            --notes "Automatic build of ${GITHUB_SHA::7}. Passed the core logic tests and the in-game GameTests. Server-side only: drop the jar into your ATM10 server's mods/ folder. The resource pack is offered to players automatically - you don't need to download it."
 
       # Short, greppable summary at the very end of the log.
       - name: Report

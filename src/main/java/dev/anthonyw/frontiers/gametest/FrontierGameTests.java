@@ -4,6 +4,10 @@ import dev.anthonyw.frontiers.DistantFrontiers;
 import dev.anthonyw.frontiers.config.Configs;
 import dev.anthonyw.frontiers.core.EliteModifier;
 import dev.anthonyw.frontiers.core.RingDef;
+import dev.anthonyw.frontiers.fx.Fx;
+import dev.anthonyw.frontiers.fx.Glyphs;
+import dev.anthonyw.frontiers.fx.ResourcePacks;
+import dev.anthonyw.frontiers.fx.Sfx;
 import dev.anthonyw.frontiers.mob.EliteAbilities;
 import dev.anthonyw.frontiers.mob.Elites;
 import dev.anthonyw.frontiers.player.DownedManager;
@@ -14,6 +18,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -420,6 +425,83 @@ public final class FrontierGameTests {
         check(husk != null, "spawner mobs must still spawn");
         check(Math.abs(husk.getMaxHealth() - 20f) < 0.01f, "spawner mobs must not be scaled");
         check(!Elites.isElite(husk) && !Elites.isDigger(husk), "spawner mobs must not become elites or diggers");
+        done(h);
+    }
+
+    // ================================================================ Resource pack effects
+
+    private static List<Object> drain(ServerPlayer player) {
+        List<Object> out = new ArrayList<>();
+        if (player.connection.getConnection().channel() instanceof io.netty.channel.embedded.EmbeddedChannel ch) {
+            Object msg;
+            while ((msg = ch.readOutbound()) != null) {
+                out.add(msg);
+            }
+        }
+        return out;
+    }
+
+    private static String soundsSent(List<Object> packets) {
+        StringBuilder out = new StringBuilder();
+        for (Object p : packets) {
+            if (p instanceof net.minecraft.network.protocol.game.ClientboundSoundPacket sound) {
+                out.append(sound.getSound().value().getLocation()).append(' ');
+            }
+        }
+        return out.toString();
+    }
+
+    @GameTest(template = ARENA, batch = "fx_sounds", timeoutTicks = 40)
+    public static void packPlayersHearCustomSoundsOthersVanilla(GameTestHelper h) {
+        reset(h, "wildmarch", "{}");
+        ServerPlayer withPack = player(h, "Pack", new BlockPos(4, 2, 4));
+        ServerPlayer without = player(h, "NoPack", new BlockPos(6, 2, 4));
+        ResourcePacks.setLoadedForTesting(withPack, true);
+        drain(withPack);
+        drain(without);
+        Fx.soundTo(withPack, Sfx.HEX_CURSE);
+        Fx.soundTo(without, Sfx.HEX_CURSE);
+        String heardWith = soundsSent(drain(withPack));
+        String heardWithout = soundsSent(drain(without));
+        ResourcePacks.setLoadedForTesting(withPack, false);
+        check(heardWith.contains("distantfrontiers:hex.curse"), "pack player should get the custom sound, got: " + heardWith);
+        check(heardWithout.contains("minecraft:entity.wither.spawn"), "others should get the vanilla one, got: " + heardWithout);
+        check(!heardWithout.contains("distantfrontiers:"), "never send a custom sound to someone without the pack");
+        done(h);
+    }
+
+    @GameTest(template = ARENA, batch = "fx_titles", timeoutTicks = 40)
+    public static void titleAnimationsOnlyForPackPlayers(GameTestHelper h) {
+        reset(h, "wildmarch", "{}");
+        ServerPlayer withPack = player(h, "Pack", new BlockPos(4, 2, 4));
+        ServerPlayer without = player(h, "NoPack", new BlockPos(6, 2, 4));
+        ResourcePacks.setLoadedForTesting(withPack, true);
+        boolean played = Fx.flipbook(withPack, Glyphs.HEX_ANIM, Glyphs.HEX_FRAMES, Component.literal("x"), 20);
+        boolean skipped = !Fx.flipbook(without, Glyphs.HEX_ANIM, Glyphs.HEX_FRAMES, Component.literal("x"), 20);
+        check(Fx.icon(without, Glyphs.HEX).getString().isEmpty(), "no icon glyphs for players without the pack");
+        check(!Fx.icon(withPack, Glyphs.HEX).getString().isEmpty(), "pack players get icon glyphs");
+        ResourcePacks.setLoadedForTesting(withPack, false);
+        check(played && skipped, "flipbooks play only for pack players");
+        check(Glyphs.ringReveal("duskreach") == Glyphs.RING_REVEAL + 3 * Glyphs.RING_REVEAL_FRAMES, "ring frame table");
+        check(Glyphs.ringReveal("custom_ring") == -1, "rings without art fall back to text");
+        done(h);
+    }
+
+    @GameTest(template = ARENA, batch = "fx_offer", timeoutTicks = 40)
+    public static void packIsOfferedOnJoinWithTheBuiltHash(GameTestHelper h) {
+        reset(h, "wildmarch", "{}");
+        ServerPlayer joiner = player(h, "Joiner", new BlockPos(4, 2, 4));
+        net.minecraft.network.protocol.common.ClientboundResourcePackPushPacket offer = null;
+        for (Object p : drain(joiner)) {
+            if (p instanceof net.minecraft.network.protocol.common.ClientboundResourcePackPushPacket push
+                    && push.id().equals(ResourcePacks.PACK_ID)) {
+                offer = push;
+            }
+        }
+        check(offer != null, "joining players should be offered the pack");
+        check(offer.hash().matches("[0-9a-f]{40}"), "offer should carry the build's SHA-1, got " + offer.hash());
+        check(offer.url().endsWith("distantfrontiers-pack.zip"), "offer url " + offer.url());
+        check(!offer.required(), "the pack must be optional by default");
         done(h);
     }
 

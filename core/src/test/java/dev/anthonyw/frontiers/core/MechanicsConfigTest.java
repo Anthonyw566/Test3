@@ -62,6 +62,37 @@ class MechanicsConfigTest {
     }
 
     @Test
+    void resourcePackDefaultsToOfferedButOptional() {
+        MechanicsConfig.Pack pack = MechanicsConfig.defaults().pack();
+        assertTrue(pack.enabled());
+        assertFalse(pack.required(), "declining the pack must never lock anyone out by default");
+        assertEquals("", pack.url());
+        assertEquals("", pack.sha1());
+    }
+
+    @Test
+    void customPackNeedsBothUrlAndHash() {
+        List<String> errors = new ArrayList<>();
+        MechanicsConfig.Pack pack = MechanicsConfig.parse(
+                "{ \"resourcePack\": { \"url\": \"https://example.com/p.zip\" } }", errors).pack();
+        assertFalse(errors.isEmpty());
+        assertEquals("", pack.url(), "half a custom pack falls back to the built-in one");
+    }
+
+    @Test
+    void customPackIsValidated() {
+        List<String> errors = new ArrayList<>();
+        String sha = "0123456789abcdef0123456789abcdef01234567";
+        MechanicsConfig.Pack ok = MechanicsConfig.parse("{ \"resourcePack\": { \"url\": \"https://example.com/p.zip\", "
+                + "\"sha1\": \"" + sha.toUpperCase() + "\", \"required\": true } }", errors).pack();
+        assertTrue(errors.isEmpty(), errors.toString());
+        assertEquals(sha, ok.sha1());
+        assertTrue(ok.required());
+        MechanicsConfig.parse("{ \"resourcePack\": { \"url\": \"ftp://x\", \"sha1\": \"nothex\" } }", errors);
+        assertTrue(errors.size() >= 2);
+    }
+
+    @Test
     void warpRollFollowsWeights() {
         MechanicsConfig.Warper w = MechanicsConfig.defaults().warper(); // 30 / 40 / 30
         int[] counts = new int[3];

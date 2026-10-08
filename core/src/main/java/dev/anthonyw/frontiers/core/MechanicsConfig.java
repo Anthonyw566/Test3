@@ -22,7 +22,8 @@ public record MechanicsConfig(
         Warded warded,
         Digging digging,
         Downed downed,
-        Hex hex
+        Hex hex,
+        Pack pack
 ) {
     public record Elites(double eliteHealthBonus, double championHealthBonus,
                          int championLootRolls, int xpBonus) {
@@ -78,6 +79,14 @@ public record MechanicsConfig(
                       double lureRadius, int ambushEveryTicks, int firstAmbushTicks,
                       int ambushBaseSize, List<String> ambushMobs, int passBackImmunityTicks,
                       double jumpRange, int minJumpTicks, int survivalXp, boolean doubleDrops) {
+    }
+
+    /**
+     * The optional sounds-and-icons resource pack. Offered to players on join;
+     * anyone who accepts gets custom sounds, icons and title animations, anyone
+     * who declines keeps the vanilla sounds. Empty url/sha1 = the build's own pack.
+     */
+    public record Pack(boolean enabled, boolean required, String url, String sha1) {
     }
 
     public static MechanicsConfig defaults() {
@@ -178,7 +187,28 @@ public record MechanicsConfig(
                 Json.integer(h, "survivalXp", 150, 0, 100000, "hex", errors),
                 Json.bool(h, "doubleDrops", true, "hex", errors));
 
-        return new MechanicsConfig(elites, warper, thief, magnetic, vol, warded, digging, downed, hex);
+        JsonObject pk = Json.obj(root, "resourcePack");
+        String sha1 = Json.str(pk, "sha1", "").trim().toLowerCase(java.util.Locale.ROOT);
+        if (!sha1.isEmpty() && !sha1.matches("[0-9a-f]{40}")) {
+            errors.add("resourcePack.sha1 should be 40 hex characters (leave it empty to use the built-in pack)");
+            sha1 = "";
+        }
+        String url = Json.str(pk, "url", "").trim();
+        if (!url.isEmpty() && !url.startsWith("https://") && !url.startsWith("http://")) {
+            errors.add("resourcePack.url should start with https:// (leave it empty to use the built-in pack)");
+            url = "";
+        }
+        if (url.isEmpty() != sha1.isEmpty()) {
+            errors.add("resourcePack.url and resourcePack.sha1 must be set together (using the built-in pack)");
+            url = "";
+            sha1 = "";
+        }
+        Pack pack = new Pack(
+                Json.bool(pk, "enabled", true, "resourcePack", errors),
+                Json.bool(pk, "required", false, "resourcePack", errors),
+                url, sha1);
+
+        return new MechanicsConfig(elites, warper, thief, magnetic, vol, warded, digging, downed, hex, pack);
     }
 
     private static int ticks(double seconds) {
@@ -284,6 +314,12 @@ public record MechanicsConfig(
                 "minJumpSeconds": 60,
                 "survivalXp": 150,
                 "doubleDrops": true
+              },
+              "resourcePack": {
+                "enabled": true,
+                "required": false,
+                "url": "",
+                "sha1": ""
               }
             }
             """;

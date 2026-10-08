@@ -4,6 +4,9 @@ import dev.anthonyw.frontiers.config.Configs;
 import dev.anthonyw.frontiers.core.EliteModifier;
 import dev.anthonyw.frontiers.core.Magnet;
 import dev.anthonyw.frontiers.core.MechanicsConfig;
+import dev.anthonyw.frontiers.fx.Fx;
+import dev.anthonyw.frontiers.fx.Glyphs;
+import dev.anthonyw.frontiers.fx.Sfx;
 import dev.anthonyw.frontiers.player.DownedManager;
 import dev.anthonyw.frontiers.ring.Ring;
 import dev.anthonyw.frontiers.ring.RingManager;
@@ -18,8 +21,6 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
@@ -97,7 +98,7 @@ public final class EliteAbilities {
         }
         data.putLong(TAG_MAG_NEXT, now + cfg.intervalTicks());
         // Wind-up: a rising hum and converging sparks, then the yank.
-        level.playSound(null, mob.blockPosition(), SoundEvents.BEACON_ACTIVATE, SoundSource.HOSTILE, 1.2f, 1.6f);
+        Fx.sound(level, mob.position(), Sfx.MAGNETIC_CHARGE);
         level.sendParticles(ParticleTypes.ELECTRIC_SPARK, mob.getX(), mob.getY() + 1, mob.getZ(),
                 40, cfg.radius() / 3, 1.0, cfg.radius() / 3, 0.0);
         Scheduler.schedule(level.getServer(), cfg.windupTicks(), () -> magneticPulse(mob));
@@ -116,7 +117,7 @@ public final class EliteAbilities {
             player.setDeltaMovement(v[0], v[1], v[2]);
             player.hurtMarked = true; // sends the velocity to the client
         }
-        level.playSound(null, mob.blockPosition(), SoundEvents.WARDEN_SONIC_BOOM, SoundSource.HOSTILE, 0.6f, 1.8f);
+        Fx.sound(level, mob.position(), Sfx.MAGNETIC_PULSE);
         level.sendParticles(ParticleTypes.SONIC_BOOM, mob.getX(), mob.getY() + 1, mob.getZ(), 1, 0, 0, 0, 0);
     }
 
@@ -131,7 +132,7 @@ public final class EliteAbilities {
             event.setAmount(event.getAmount() * (float) Configs.mechanics().warded().targetDamageMultiplier());
             level.sendParticles(ParticleTypes.ENCHANTED_HIT, mob.getX(), mob.getY() + 1, mob.getZ(),
                     12, 0.4, 0.5, 0.4, 0.2);
-            level.playSound(null, mob.blockPosition(), SoundEvents.SHIELD_BLOCK, SoundSource.HOSTILE, 0.8f, 1.2f);
+            Fx.sound(level, mob.position(), Sfx.WARDED_DEFLECT);
             if (event.getSource().getEntity() instanceof ServerPlayer attacker) {
                 attacker.displayClientMessage(Component.literal(Elites.displayName(mob)
                                 + " is fixated on you - your hits glance off. Someone else has to hit it!")
@@ -169,8 +170,9 @@ public final class EliteAbilities {
         for (EliteModifier modifier : Elites.modifiers(attacker)) {
             if (!(";" + seen + ";").contains(";" + modifier.id() + ";")) {
                 seen = seen.isEmpty() ? modifier.id() : seen + ";" + modifier.id();
-                player.sendSystemMessage(Component.literal("⚑ " + capitalize(modifier.epithet().substring(4)) + ": ")
-                        .withStyle(ChatFormatting.GOLD)
+                player.sendSystemMessage(Fx.icon(player, Glyphs.ability(modifier))
+                        .append(Component.literal("⚑ " + capitalize(modifier.epithet().substring(4)) + ": ")
+                        .withStyle(ChatFormatting.GOLD))
                         .append(Component.literal(modifier.tip()).withStyle(ChatFormatting.GRAY)));
             }
         }
@@ -300,7 +302,7 @@ public final class EliteAbilities {
             if (SpawnUtil.isStandable(nether, pos) && nether.getFluidState(pos.below()).isEmpty()) {
                 warpFx(level, player.position());
                 player.teleportTo(nether, x + 0.5, y, z + 0.5, player.getYRot(), player.getXRot());
-                player.playNotifySound(SoundEvents.PORTAL_TRAVEL, SoundSource.MASTER, 0.5f, 0.8f);
+                Fx.soundTo(player, Sfx.WARPER_WARP);
                 player.sendSystemMessage(Component.literal("Reality tears. You smell sulfur. Find your own way home.")
                         .withStyle(ChatFormatting.DARK_RED, ChatFormatting.BOLD));
                 level.getServer().getPlayerList().broadcastSystemMessage(Component.literal(
@@ -325,7 +327,7 @@ public final class EliteAbilities {
 
     private static void warpFx(ServerLevel level, Vec3 pos) {
         level.sendParticles(ParticleTypes.REVERSE_PORTAL, pos.x, pos.y + 1, pos.z, 40, 0.4, 0.8, 0.4, 0.15);
-        level.playSound(null, BlockPos.containing(pos), SoundEvents.ENDERMAN_TELEPORT, SoundSource.HOSTILE, 1.0f, 0.8f);
+        Fx.sound(level, pos, Sfx.WARPER_WARP);
     }
 
     // ------------------------------------------------------------------ thief
@@ -359,7 +361,7 @@ public final class EliteAbilities {
         thief.setTarget(null);
         attachFleeGoal(thief);
 
-        level.playSound(null, thief.blockPosition(), SoundEvents.WITCH_CELEBRATE, SoundSource.HOSTILE, 1.0f, 1.4f);
+        Fx.sound(level, thief.position(), Sfx.THIEF_STEAL);
         String who = Elites.displayName(thief);
         victim.sendSystemMessage(Component.literal(who + " stole your ")
                 .withStyle(ChatFormatting.RED)
@@ -424,7 +426,7 @@ public final class EliteAbilities {
     /** Hisses and smokes for the fuse, then blows. Hurts everyone; breaks no blocks. */
     public static void detonate(ServerLevel level, Vec3 pos) {
         MechanicsConfig.Volatile cfg = Configs.mechanics().volatileAbility();
-        level.playSound(null, BlockPos.containing(pos), SoundEvents.CREEPER_PRIMED, SoundSource.HOSTILE, 1.5f, 0.6f);
+        Fx.sound(level, pos, Sfx.VOLATILE_FUSE);
         for (int t = 0; t < cfg.fuseTicks(); t += 5) {
             Scheduler.schedule(level.getServer(), t, () -> level.sendParticles(ParticleTypes.LARGE_SMOKE,
                     pos.x, pos.y + 0.6, pos.z, 6, 0.3, 0.3, 0.3, 0.02));

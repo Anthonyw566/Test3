@@ -3,6 +3,9 @@ package dev.anthonyw.frontiers.mob;
 import dev.anthonyw.frontiers.DistantFrontiers;
 import dev.anthonyw.frontiers.config.Configs;
 import dev.anthonyw.frontiers.core.EliteModifier;
+import dev.anthonyw.frontiers.fx.Fx;
+import dev.anthonyw.frontiers.fx.Glyphs;
+import dev.anthonyw.frontiers.fx.Sfx;
 import dev.anthonyw.frontiers.ring.Ring;
 import dev.anthonyw.frontiers.ring.RingManager;
 import dev.anthonyw.frontiers.util.Scheduler;
@@ -57,10 +60,13 @@ public final class EliteRewards {
         ServerPlayer killer = killer(event.getSource());
         if (killer != null) {
             Ring ring = RingManager.ringOf(mob);
-            killer.getServer().getPlayerList().broadcastSystemMessage(Component.literal(
-                            "☠ " + Elites.displayName(mob) + " has fallen to " + killer.getName().getString()
-                                    + (ring == null ? "" : " in " + ring.name()) + ".")
-                    .withStyle(ChatFormatting.GOLD), false);
+            String text = "☠ " + Elites.displayName(mob) + " has fallen to " + killer.getName().getString()
+                    + (ring == null ? "" : " in " + ring.name()) + ".";
+            for (ServerPlayer viewer : killer.getServer().getPlayerList().getPlayers()) {
+                viewer.sendSystemMessage(Fx.icon(viewer, Glyphs.CHAMPION)
+                        .append(Component.literal(text).withStyle(ChatFormatting.GOLD)));
+                Fx.soundTo(viewer, Sfx.CHAMPION_SLAIN);
+            }
         }
     }
 

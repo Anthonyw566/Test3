@@ -3,6 +3,7 @@ package dev.anthonyw.frontiers;
 import com.mojang.logging.LogUtils;
 import dev.anthonyw.frontiers.command.RingsCommand;
 import dev.anthonyw.frontiers.config.Configs;
+import dev.anthonyw.frontiers.fx.ResourcePacks;
 import dev.anthonyw.frontiers.mob.EliteAbilities;
 import dev.anthonyw.frontiers.mob.EliteRewards;
 import dev.anthonyw.frontiers.mob.MobSpawns;
@@ -41,6 +42,7 @@ public final class DistantFrontiers {
         NeoForge.EVENT_BUS.register(new EliteRewards());
         NeoForge.EVENT_BUS.register(DownedManager.INSTANCE);
         NeoForge.EVENT_BUS.register(HexManager.INSTANCE);
+        NeoForge.EVENT_BUS.register(ResourcePacks.INSTANCE);
     }
 
     private void onServerAboutToStart(ServerAboutToStartEvent event) {
@@ -52,6 +54,7 @@ public final class DistantFrontiers {
         DownedManager.INSTANCE.clearAll();
         HexManager.INSTANCE.clearAll();
         BoundaryWatcher.clear();
+        ResourcePacks.clear();
     }
 
     private void onRegisterCommands(RegisterCommandsEvent event) {

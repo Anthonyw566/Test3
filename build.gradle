@@ -21,6 +21,39 @@ java {
 // Minecraft, so `./gradlew :core:test` works anywhere.
 sourceSets.main.java.srcDir 'core/src/main/java'
 
+// ---------------------------------------------------------------------------
+// Resource pack (custom sounds, icons, title animations). The zip is built
+// reproducibly - same assets, same bytes, same SHA-1 - and its URL + SHA-1 are
+// baked into the jar so the server can offer it to players on join.
+def packZip = tasks.register('resourcePackZip', Zip) {
+    from 'resourcepack'
+    archiveFileName = 'distantfrontiers-pack.zip'
+    destinationDirectory = layout.buildDirectory.dir('pack')
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+    dirPermissions { unix('rwxr-xr-x') }
+    filePermissions { unix('rw-r--r--') }
+}
+
+def packInfoDir = layout.buildDirectory.dir('generated/packinfo')
+def packInfo = tasks.register('resourcePackInfo') {
+    dependsOn packZip
+    def zipFile = packZip.flatMap { it.archiveFile }
+    def url = project.pack_url
+    inputs.file(zipFile)
+    inputs.property('url', url)
+    outputs.dir(packInfoDir)
+    doLast {
+        def bytes = zipFile.get().asFile.bytes
+        def sha1 = java.security.MessageDigest.getInstance('SHA-1').digest(bytes).encodeHex().toString()
+        def out = packInfoDir.get().file('distantfrontiers-pack.properties').asFile
+        out.parentFile.mkdirs()
+        out.text = "url=${url}\nsha1=${sha1}\n"
+        logger.lifecycle("Resource pack: ${bytes.length} bytes, sha1 ${sha1}")
+    }
+}
+sourceSets.main.resources.srcDir(packInfo)
+
 neoForge {
     version = project.neo_version
 

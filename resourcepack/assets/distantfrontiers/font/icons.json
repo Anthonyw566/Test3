@@ -1,0 +1,14 @@
+{
+  "providers": [
+    {
+      "type": "bitmap",
+      "file": "distantfrontiers:font/icons.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "",
+        "\u0000\u0000\u0000\u0000\u0000"
+      ]
+    }
+  ]
+}
