@@ -1,99 +1,118 @@
 # Distant Frontiers
 
-Distance-based difficulty rings, elite enemies, expedition Heat, and a contract
-board for a private **All The Mods 10** server (NeoForge / Minecraft 1.21.1).
+A server-side difficulty mod for **All The Mods 10** (NeoForge, Minecraft 1.21.1),
+built for a small group of friends.
 
-The further you travel from spawn, the more dangerous — and more rewarding —
-the world becomes. Home stays safe; the frontier does not.
+**The further you go from spawn, the worse it gets — and the more your friends matter.**
+Sometimes they'll save you. Sometimes they'll hand you a curse and run.
 
-**Read [`DESIGN.md`](DESIGN.md)** for the full gameplay design and tuning
-rationale.
+## Install
 
-## What v1 includes
+1. Download `distantfrontiers-*.jar` from the
+   [latest release](https://github.com/Anthonyw566/Test3/releases/tag/latest).
+2. Put it in your **server's** `mods/` folder and restart.
+3. Done. Players **don't install anything** — every effect uses vanilla
+   titles, particles, sounds and chat.
 
-- **Five data-driven rings** (The Hearth → The Verge → The Wildmarch → The
-  Duskreach → The Ashenfront) with entry fanfare, safe-zone spawn suppression,
-  first-discovery announcements and uncharted-territory warnings.
-- **Capped mob scaling** by ring, with farm-proof exclusions (spawner,
-  summoned and machine mobs never scale, never pay).
-- **Elites & Champions**: eight telegraphed modifiers with category pairing
-  rules, generated names whose epithet states the threat, glowing champions,
-  ambient particle telegraphs and kill announcements:
-  - Swift, Stonehide, Summoner, Blinkstep, Corrosive, Vengeful
-  - **Warper** — its hits can teleport *you*: flung skyward, position-swapped,
-    scattered… or (rare, Ashenfront, configurable) ripped straight into the
-    Nether.
-  - **Sieger** — mines through your cover to reach you: real crack animations,
-    hardness cap, 32-block lifetime budget, never touches chests/machines,
-    never digs inside the Hearth. Hunters always carry it — hiding from the
-    frontier stops being free. The Hearth is the only truly safe ground.
-- **Expedition Heat**: builds in Ring 2+, jumps on elite kills. High Heat
-  brings warned ambushes, then a named Hunter. Field Marks bank only at home —
-  with up to +50% bonus scaled by Heat on arrival. Death banks half, no bonus.
-- **Marks economy**: one virtual currency, daily diminishing returns on kill
-  trickle, no physical token to dupe or automate.
-- **The Contract Board** (`/rings board`): three rotating daily bounties
-  (a named quarry that materializes near hunters in its ring), guarded supply
-  caches with vanilla loot tables, and one-time **ring Charters** that unlock
-  shop tiers and pay everyone online.
-- **Expedition Broker** (`/rings shop`): config-driven stock (repair kits,
-  rations, enchanting bundles, a Cache Map that generates an adventure in your
-  current ring).
-- **Surge nights**: 35% chance each dusk that one ring surges until dawn —
-  double elites, 1.5× Marks, announced server-wide.
+Type `/rings help` in game for the rules, `/rings` to see where you are.
+
+## How it plays
+
+### The rings
+Distance from spawn sets the danger. Crossing a boundary shows a title.
+
+| Ring | Distance | What changes |
+|---|---|---|
+| **The Hearth** | 0–400 | Safe. No hostiles spawn, nothing digs in, the Hex is paused. |
+| **The Verge** | 400–1,200 | Mobs a bit tougher, 1 in 4 diggers, first elites. |
+| **The Wildmarch** | 1,200–2,800 | Half the diggers, all abilities, champions appear. |
+| **The Duskreach** | 2,800–5,600 | Most mobs dig, elites and champions are common. |
+| **The Ashenfront** | 5,600+ | Everything digs. Warpers can rip you into the Nether. |
+
+The Nether counts as the Duskreach and the End as the Ashenfront. Other
+dimensions (mining dims etc.) are untouched.
+
+### Hiding doesn't work anymore
+Outside the Hearth, many mobs **dig through walls** to reach you. They can
+sense you through blocks, you'll hear the cracking, and the blocks drop as
+items. They never break chests or machines, obsidian, or anything inside the
+Hearth, and each mob can only dig so far. Spawner farms aren't affected.
+
+### Elites
+Some mobs spawn as named **elites** (yellow) or **champions** (gold, glowing,
+two abilities). The name tells you what it does — *"Karok the Warping"*.
+
+| Ability | What it does |
+|---|---|
+| **Warping** | Its hits can teleport you: flung into the sky, **swapped with a nearby friend**, or thrown sideways. Rarely, deep out, it rips you into the Nether. |
+| **Thief** | Steals an item from your hotbar and runs. Kill it and the item drops (glowing and indestructible). |
+| **Magnetic** | Sparks, a hum… then it yanks everyone nearby toward itself. |
+| **Volatile** | Explodes a moment after it dies. Back off. Breaks no blocks. |
+| **Warded** | Barely hurt by whoever it's chasing. **Someone else has to hit it.** |
+
+Elites drop loot from their ring's loot table (champions roll twice) and bonus XP.
+
+### Downed, not dead
+If you'd die while a friend is within 64 blocks, you go **down** instead: you
+crawl, glow, and can't fight, eat, or build. A friend **crouching next to you
+for 4 seconds** pulls you back up. You have 45 seconds — but mobs keep
+hitting downed players, each hit costs time, and getting hit stops the revive.
+Hold crouch to give up. Alone, the void, or `/kill`: you just die.
+
+### The Hex
+Kill an elite and its dying curse may land on you (champions always curse).
+While **hexed**: you glow, every hostile nearby comes for you, ambushes keep
+arriving, and **everything you kill drops double**.
+
+- Survive the 4-minute timer → XP and a loot roll.
+- Or **punch a friend** to pass it on. No tag-backs for 10 seconds.
+- The timer freezes in the Hearth. You can't wait it out at home — but you
+  *can* come home and smack whoever's building.
+- Die hexed and it jumps to the nearest player.
 
 ## Commands
 
-Players: `/rings info · list · zoneat <x> <z> · board · accept <id> · shop ·
-buy <offer> · heat`
-Admins: `/rings reload · setorigin · inspect · simulate elite|champion ·
-surge <ring>|stop · marks give <player> <amt> · heatset <value> ·
-charter <ring> · bounties reroll · debug boundaries`
+| Command | Who | |
+|---|---|---|
+| `/rings` | everyone | Your ring, distance, danger, Hex timer |
+| `/rings help` | everyone | The rules in six lines |
+| `/rings elite [entity] [abilities…\|champion]` | op | Spawn a test elite, e.g. `/rings elite minecraft:skeleton warper` |
+| `/rings hex <player> [seconds]` / `unhex` | op | Hand out / clear the Hex |
+| `/rings down <player>` | op | Practice revives |
+| `/rings inspect` | op | Nearest mob's tier, abilities, digger budget |
+| `/rings boundary` | op | Particle arc on the nearest ring edge |
+| `/rings reload` | op | Reload both config files, report problems |
 
-## Configuration
+## Config
 
-Generated on first run under `config/distantfrontiers/`:
+`config/distantfrontiers/` (written on first start, reload with `/rings reload`):
 
-- `rings.json` — radii, names, colors, mob multipliers, elite chances, heat
-  rates, scaling caps, exclusions
-- `contracts.json` — bounty mob pool, cache loot tables, charter targets
-- `shop.json` — broker stock, prices, tier gating
-- `abilities.json` — Warper proc/cooldown/weights + Nether-rift chance and
-  rings; Sieger hardness cap, block budget, blacklist, drops
+- **`rings.json`** — ring sizes, names, colors, how tough mobs are, elite /
+  champion / digger chances, which abilities appear, elite loot tables, which
+  dimension uses which ring, scaling caps, excluded spawn types.
+- **`mechanics.json`** — every number for every ability, digging, Downed and
+  the Hex. Only write the keys you want to change; the rest use defaults.
 
-All hot-reloadable with `/rings reload` (validation errors are reported and
-the previous config stays active).
+Typos are reported in the server log and by `/rings reload` and never crash
+the server. A bad value falls back to its default.
 
-## Testing
-
-```
-./run-tests.sh          # core logic tests + (if network allows) mod compile
-./run-tests.sh --rerun  # force re-execution
-```
-
-The `core/` module contains all engine-free logic — ring lookup and config
-validation, Heat/economy math, diminishing returns, modifier pairing rules,
-name generation, cache placement geometry, warp-effect weighting and every
-config parser — with a JUnit suite that runs without Minecraft. The mod layer
-compiles those same sources into the jar and adds only the event glue.
-
-## Deployment
-
-Server-side only: drop the built jar into the server's `mods/` folder.
-Players install **nothing** — every UI element is chat, titles, action bar,
-sounds and particles.
-
-## Building
+## Development
 
 ```
-gradle build        # jar lands in build/libs/
-gradle runServer    # dev server for testing
+./run-tests.sh            # core rule tests (no Minecraft needed)
+./gradlew build           # the mod jar -> build/libs/
+./gradlew runGameTestServer   # in-game tests on a headless server
 ```
 
-Requires Java 21. Built against NeoForge 21.1.x with ModDevGradle.
+- `core/` holds the engine-free rules: config parsing and validation, ring
+  lookup, Downed timers, Hex rules, dig rules, ability rolls, magnet math.
+  70 JUnit tests.
+- `src/main/java/.../gametest/` holds 21 in-game tests. They spawn real
+  mobs and mock survival players, then check that a downed player gets
+  revived, the Hex passes on a punch, a warper swaps two players, a thief's
+  loot drops when it dies, a digger breaks into a bunker (but not in the
+  Hearth), natural spawns are scaled exactly once, and so on.
+- CI (`.github/workflows/build.yml`) runs everything on every push and
+  publishes the jar as the `latest` pre-release.
 
-> Note: not yet compile-verified — the build needs network access to
-> `maven.neoforged.net`, `libraries.minecraft.net`, `piston-meta.mojang.com`
-> and `piston-data.mojang.com`, which this workspace's network policy
-> currently blocks. First build will likely surface a handful of mapping-name
-> fixes; the architecture does not depend on them.
+See [`DESIGN.md`](DESIGN.md) for why it works the way it does.

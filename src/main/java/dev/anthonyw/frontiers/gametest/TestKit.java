@@ -35,7 +35,10 @@ final class TestKit {
     private TestKit() {
     }
 
-    /** Fresh state, mechanics.json overrides, and the arena placed in the middle of {@code ringId}. */
+    /** Arena coordinates: the GameTest framework places the structure one block above the test
+     * origin, so the stone floor is at relative y=1 and things stand at y=2.
+     *
+     * Fresh state, mechanics.json overrides, and the arena placed in the middle of {@code ringId}. */
     static void reset(GameTestHelper h, String ringId, String mechanicsJson) {
         reset(h, ringId, mechanicsJson, r -> r);
     }
@@ -54,7 +57,7 @@ final class TestKit {
         check(ring != null, "no ring " + ringId);
         double inner = RingLookup.innerRadius(base.rings(), ringId);
         double outer = ring.unbounded() ? inner + 1000 : ring.outerRadius();
-        BlockPos center = h.absolutePos(new BlockPos(8, 1, 8));
+        BlockPos center = h.absolutePos(new BlockPos(8, 2, 8));
         double originX = center.getX() - (inner + outer) / 2;
         List<RingDef> rings = base.rings().stream().map(r -> r.id().equals(ringId) ? tweak.apply(r) : r).toList();
         RingManager.setForTesting(new RingsConfig(false, originX, center.getZ(), base.radialDimensions(),

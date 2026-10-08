@@ -64,6 +64,6 @@ jobs:
           echo "=================== COMPILE ==================="
           grep -E "error:|BUILD (SUCCESSFUL|FAILED)" -A4 compile.log 2>/dev/null | head -200 || true
           echo "=================== GAMETESTS ==================="
-          grep -iE "gametest|tests? (passed|failed)|failed!|passed!|required test|assert|exception|caused by|BUILD (SUCCESSFUL|FAILED)" gametest.log 2>/dev/null \
+          grep -iE "LogTestReporter|failed at|tests? (passed|failed)|required test|exception|caused by|error|BUILD (SUCCESSFUL|FAILED)" gametest.log 2>/dev/null \
             | grep -v "DEBUG" | head -200 || true
           echo "=================== END ==================="
