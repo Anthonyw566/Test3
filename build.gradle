@@ -17,8 +17,8 @@ java {
 }
 
 // The mod compiles the pure-logic core sources directly into its own jar.
-// The :core subproject compiles and TESTS the same sources without Minecraft,
-// so `gradle :core:test` works even where the NeoForge toolchain can't download.
+// The :core subproject compiles and unit-tests the same sources without
+// Minecraft, so `./gradlew :core:test` works anywhere.
 sourceSets.main.java.srcDir 'core/src/main/java'
 
 neoForge {
@@ -30,6 +30,12 @@ neoForge {
         }
         client {
             client()
+        }
+        // Headless server that runs every @GameTest in the mod, then exits
+        // with a non-zero code if any failed. Used by CI.
+        gameTestServer {
+            type = 'gameTestServer'
+            systemProperty 'neoforge.enabledGameTestNamespaces', 'distantfrontiers'
         }
     }
 
