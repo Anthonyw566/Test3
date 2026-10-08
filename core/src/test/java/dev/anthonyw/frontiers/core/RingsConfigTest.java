@@ -31,6 +31,9 @@ class RingsConfigTest {
         assertEquals(List.of("minecraft:overworld"), c.radialDimensions());
         assertTrue(c.excludedSpawnTypes().contains("SPAWNER"));
         assertTrue(c.excludedSpawnTypes().contains("TRIAL_SPAWNER"));
+        assertTrue(c.excludedSpawnTypes().contains("EVENT"), "raids must never be touched");
+        assertTrue(c.excludedSpawnTypes().containsAll(RingsConfig.DEFAULT_EXCLUDED_SPAWN_TYPES),
+                "shipped JSON and code defaults must agree");
         assertFalse(c.excludedSpawnTypes().contains("NATURAL"));
     }
 

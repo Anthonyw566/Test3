@@ -187,6 +187,16 @@ public final class EliteAbilities {
             return;
         }
         data.putLong(TAG_WARP_READY, now + cfg.cooldownTicks());
+        // Let the hit and its knockback finish first; teleporting (especially across
+        // dimensions) from inside the damage event is asking for trouble.
+        Scheduler.schedule(level.getServer(), 1, () -> {
+            if (affectable(victim) && victim.level() == level) {
+                warp(victim, attacker, level, cfg);
+            }
+        });
+    }
+
+    private static void warp(ServerPlayer victim, Mob attacker, ServerLevel level, MechanicsConfig.Warper cfg) {
         victim.stopRiding();
         String who = Elites.displayName(attacker);
 

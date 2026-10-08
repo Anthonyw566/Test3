@@ -14,6 +14,10 @@ Sometimes they'll save you. Sometimes they'll hand you a curse and run.
 3. Done. Players **don't install anything** — every effect uses vanilla
    titles, particles, sounds and chat.
 
+Want to try it alone first? Drop the same jar into your ATM10 *client's*
+`mods/` folder and open a singleplayer world. Use `/rings elite warper` to
+meet an elite, or open the world to LAN with a friend to try Downed and the Hex.
+
 Type `/rings help` in game for the rules, `/rings` to see where you are.
 
 ## How it plays
@@ -95,6 +99,19 @@ arriving, and **everything you kill drops double**.
 
 Typos are reported in the server log and by `/rings reload` and never crash
 the server. A bad value falls back to its default.
+
+### Tuning cheat-sheet (the knobs that matter most)
+
+| Feels like… | Change |
+|---|---|
+| Too much digging | `rings.json` → lower `mobs.digChance` per ring, or `mechanics.json` → `digging.senseRange` |
+| Bases near the edge of the Hearth get wrecked | Make the Hearth bigger (`outerRadius` of `hearth`) |
+| Elites everywhere / too rare | `elites.eliteChance` and `championChance` per ring |
+| Downed is too forgiving / too harsh | `downed.bleedOutSeconds`, `reviveSeconds`, `rescueRange` |
+| The Hex is too brutal | `hex.durationSeconds`, `hex.ambushEverySeconds`, `hex.ambushBaseSize` |
+| Nobody ever wants the Hex | raise `hex.survivalXp`, keep `doubleDrops` on |
+| Warpers too chaotic | `warper.procChance`, or set `swapWeight` to 0 to stop friend-swaps |
+| An ATM10 dimension should be dangerous | `rings.json` → `dimensionRings`, e.g. `"allthemodium:the_other": "duskreach"` |
 
 ## Development
 

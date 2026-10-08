@@ -230,9 +230,11 @@ public final class FrontierGameTests {
         Vec3 aBefore = a.position();
         Vec3 bBefore = b.position();
         a.hurt(h.getLevel().damageSources().mobAttack(warper), 1f);
-        check(a.position().distanceTo(bBefore) < 0.6, "A should be where B was, is at " + a.position());
-        check(b.position().distanceTo(aBefore) < 0.6, "B should be where A was, is at " + b.position());
-        done(h);
+        h.succeedWhen(() -> {
+            check(a.position().distanceTo(bBefore) < 0.6, "A should be where B was, is at " + a.position());
+            check(b.position().distanceTo(aBefore) < 0.6, "B should be where A was, is at " + b.position());
+            cleanup(h);
+        });
     }
 
     @GameTest(template = ARENA, batch = "warper_toss", timeoutTicks = 60, skyAccess = true)
@@ -244,8 +246,10 @@ public final class FrontierGameTests {
         Husk warper = elite(h, new BlockPos(9, 2, 8), EliteModifier.WARPER);
         double y = a.getY();
         a.hurt(h.getLevel().damageSources().mobAttack(warper), 1f);
-        check(a.getY() >= y + 6, "A should be flung at least 6 blocks up, went from " + y + " to " + a.getY());
-        done(h);
+        h.succeedWhen(() -> {
+            check(a.getY() >= y + 6, "A should be flung at least 6 blocks up, went from " + y + " to " + a.getY());
+            cleanup(h);
+        });
     }
 
     @GameTest(template = ARENA, batch = "thief", timeoutTicks = 120)

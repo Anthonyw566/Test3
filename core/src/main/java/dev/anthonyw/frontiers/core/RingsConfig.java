@@ -46,10 +46,14 @@ public record RingsConfig(
             "JOCKEY", "EVENT", "CONVERSION", "REINFORCEMENT", "TRIGGERED", "BUCKET", "SPAWN_EGG",
             "COMMAND", "DISPENSER", "PATROL", "TRIAL_SPAWNER");
 
-    /** Spawns that never get ring scaling, elite rolls or digging: farms, eggs, commands. */
+    /**
+     * Spawns that never get ring treatment (scaling, elites, digging, Hearth
+     * suppression): farms, eggs, commands, conversions, and raids (EVENT) -
+     * cancelling raid waves inside the Hearth could leave a raid stuck.
+     */
     public static final List<String> DEFAULT_EXCLUDED_SPAWN_TYPES = List.of(
             "SPAWNER", "TRIAL_SPAWNER", "MOB_SUMMONED", "CONVERSION", "BREEDING", "BUCKET",
-            "SPAWN_EGG", "COMMAND", "DISPENSER");
+            "SPAWN_EGG", "COMMAND", "DISPENSER", "EVENT");
 
     public record Result(RingsConfig config, List<String> errors) {
         public boolean ok() {
@@ -269,7 +273,7 @@ public record RingsConfig(
               "scalingCaps": { "maxHealthMult": 2.0, "maxDamageMult": 2.0 },
               "exclusions": {
                 "spawnTypes": ["SPAWNER", "TRIAL_SPAWNER", "MOB_SUMMONED", "CONVERSION", "BREEDING",
-                               "BUCKET", "SPAWN_EGG", "COMMAND", "DISPENSER"],
+                               "BUCKET", "SPAWN_EGG", "COMMAND", "DISPENSER", "EVENT"],
                 "entityBlacklist": [],
                 "skipBosses": true
               }
