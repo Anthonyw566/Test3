@@ -126,6 +126,20 @@ public final class FrontierGameTests {
         done(h);
     }
 
+    @GameTest(template = ARENA, batch = "downed_helpless", timeoutTicks = 60)
+    public static void downedPlayersCantFightOrPassTheHex(GameTestHelper h) {
+        reset(h, "wildmarch", "{}");
+        ServerPlayer a = player(h, "A", new BlockPos(4, 2, 4));
+        ServerPlayer b = player(h, "B", new BlockPos(5, 2, 4));
+        HexManager.INSTANCE.give(a, 2000, " for testing");
+        DownedManager.INSTANCE.goDown(a, h.getLevel().damageSources().generic());
+        float before = b.getHealth();
+        a.attack(b);
+        check(HexManager.remaining(b) == 0, "a downed player must not be able to pass the Hex");
+        check(b.getHealth() == before, "a downed player must not be able to hurt anyone");
+        done(h);
+    }
+
     // ================================================================ The Hex
 
     @GameTest(template = ARENA, batch = "hex_pass", timeoutTicks = 60)
@@ -221,7 +235,7 @@ public final class FrontierGameTests {
         done(h);
     }
 
-    @GameTest(template = ARENA, batch = "warper_toss", timeoutTicks = 60)
+    @GameTest(template = ARENA, batch = "warper_toss", timeoutTicks = 60, skyAccess = true)
     public static void warperFlingsYouSkyward(GameTestHelper h) {
         reset(h, "wildmarch", """
                 { "warper": { "procChance": 1.0, "tossWeight": 1, "swapWeight": 0, "scatterWeight": 0,
@@ -300,6 +314,20 @@ public final class FrontierGameTests {
         check(v.x > 0.5, "A should be pulled toward the magnet (+x), velocity " + v);
         check(v.y > 0, "the pull should lift A off the ground, velocity " + v);
         done(h);
+    }
+
+    @GameTest(template = ARENA, batch = "elite_loot", timeoutTicks = 40)
+    public static void championKillsDropRingLoot(GameTestHelper h) {
+        reset(h, "duskreach", "{}");
+        ServerPlayer a = player(h, "A", new BlockPos(4, 2, 4));
+        Husk champion = elite(h, new BlockPos(8, 2, 8), EliteModifier.WARDED, EliteModifier.THIEF);
+        Vec3 where = champion.position();
+        champion.hurt(h.getLevel().damageSources().playerAttack(a), 1000f);
+        h.runAfterDelay(2, () -> {
+            int stacks = h.getLevel().getEntitiesOfClass(ItemEntity.class, new AABB(where, where).inflate(3)).size();
+            check(stacks >= 3, "a champion should drop two rolls of Duskreach loot, found " + stacks + " stacks");
+            done(h);
+        });
     }
 
     // ================================================================ Digging

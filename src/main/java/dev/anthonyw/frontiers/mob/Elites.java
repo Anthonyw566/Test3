@@ -136,7 +136,8 @@ public final class Elites {
         mob.setCustomName(Component.literal(nameFor(NameGen.generate(new McRand(mob.getRandom())), mods))
                 .withStyle(champion ? ChatFormatting.GOLD : ChatFormatting.YELLOW));
         mob.setCustomNameVisible(true);
-        mob.setPersistenceRequired();
+        // Not persistent: elites despawn like any mob, so they never pile up in the wild.
+        // (Thieves become persistent only while carrying someone's item.)
         if (champion) {
             mob.addEffect(new MobEffectInstance(MobEffects.GLOWING, -1, 0, false, false));
         }
