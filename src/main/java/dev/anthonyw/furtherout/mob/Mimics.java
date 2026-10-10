@@ -22,6 +22,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
@@ -58,7 +59,7 @@ public final class Mimics {
         }
         Player near = level.getNearestPlayer(x, y, z, cfg.playerRange(), Mimics::counts);
         if (!MimicRules.replaces(cfg, ring.danger(), ring.safeZone(), near != null, level.random.nextDouble())
-                || level.canSeeSky(BlockPos.containing(x, y, z))) {
+                || !underCover(level, BlockPos.containing(x, y, z))) {
             return false; // caves only
         }
         MimicRules.Bait bait = cfg.baits().get(level.random.nextInt(cfg.baits().size()));
@@ -68,6 +69,11 @@ public final class Mimics {
         }
         place(level, new Vec3(x, y, z), stack, cfg.mobs().get(level.random.nextInt(cfg.mobs().size())));
         return true;
+    }
+
+    /** Solid ground somewhere overhead (leaves don't count): a cave, not a field at night. */
+    private static boolean underCover(ServerLevel level, BlockPos pos) {
+        return level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, pos.getX(), pos.getZ()) > pos.getY() + 1;
     }
 
     private static ItemStack stackOf(MimicRules.Bait bait) {
