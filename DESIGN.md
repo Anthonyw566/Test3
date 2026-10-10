@@ -1,86 +1,88 @@
-# Distant Frontiers — Design
+# Further Out — Design
 
-## The pitch
+## The idea
 
-ATM10 gets easy: once you have good gear, mobs are background noise and any
-dirt hut is a fortress. This mod makes distance from spawn the difficulty
-dial, and it makes the *group* the unit of survival. Your friends can save
-you, and your friends can ruin your day.
+ATM10 gets easy: once you have good gear, monsters are background noise and
+any hole in the ground is a fortress. This mod makes distance from spawn the
+difficulty dial, and it makes the *group* the unit of survival.
 
 ## Principles
 
-1. **Harder means new situations, not bigger numbers.** Ring scaling is
-   modest and capped (×2 max). The challenge comes from abilities, digging,
-   and decisions.
-2. **Every mechanic is a social mechanic.** Each one should create a moment
-   *between players*: a rescue, a betrayal, a "get over here and hit it".
-3. **Legible.** Names state abilities, auras show them, every activation has
-   a sound, the first hit explains itself in chat. Nobody should die and ask
-   "what was that?".
-4. **Small.** A few systems that interact beat many that don't. No currency,
-   no shop, no quest log, no custom items, nothing to install client-side.
+1. **New situations, not bigger numbers.** Scaling is modest and capped at
+   2x. Challenge comes from abilities, digging and decisions.
+2. **Every mechanic creates a moment between players**: a rescue, a swap,
+   a hand-off, a "get over here and hit it".
+3. **Readable and counterable.** Every ability shows itself before it acts
+   (particles plus a recognisable vanilla sound), and each has a counter:
+   a shield, cover, distance, a friend.
+4. **Challenging, never a chore.** Apply the "after the tenth time" test.
+   Setbacks are short and recoverable. Rare things stay rare. Nothing wrecks
+   a base, nothing takes your tools, and nothing traps you.
+5. **Quiet presentation.** Sound, particles and mob behaviour first, text
+   last. There are no titles, broadcasts, lore or invented names. The only
+   chat lines are one-time tips.
 
 ## The systems
 
-| System | One-line rule | The moment it creates |
+| System | Rule | The moment it creates |
 |---|---|---|
-| **Rings** | Distance from spawn sets danger; the Hearth is safe | "Do we push into the Duskreach tonight?" |
-| **Diggers** | Mobs you can't reach dig to you (not in the Hearth, never chests/machines) | Hearing cracking through the wall of your "safe" hole |
-| **Warper** | Hits teleport you — skyward, sideways, or *into your friend's place* | Your friend is suddenly in your fight, and you're in their lava parkour |
-| **Thief** | Steals a hotbar item and flees | A three-person chase through a cave after someone's pickaxe |
-| **Magnetic** | Telegraphed pull of everyone nearby | The group gets clumped… next to the Volatile |
-| **Volatile** | Explodes after death | Who has the reach weapon? Everyone else, back off |
-| **Warded** | Barely hurt by the one it's chasing | Solo players can't brute-force it. Call a friend |
-| **Downed** | Die near a friend → crawl, bleed out, get revived by a crouch | Rescues through a mob crowd, or deciding not to |
-| **The Hex** | Elite kills can curse you; punch a friend to pass it; double loot while held | Greed vs safety, hot potato, revenge |
+| **Danger levels** | Distance from spawn sets the level; the safe area is safe | "Do we push past level 3 tonight?" |
+| **Digging** | Monsters dig natural terrain to reach you (never near a base) | Hearing cracking through the wall of your hidey-hole |
+| **Warping** | A charged hit teleports you: up, aside, or into a friend's place | Your friend is suddenly in your fight |
+| **Thieving** | Takes one stackable hotbar item and runs | A three-person chase through a cave |
+| **Magnetic** | Telegraphed pull of everyone it can see | The group gets clumped… next to the Volatile |
+| **Volatile** | Explodes two seconds after death | "Back off!" |
+| **Warded** | Shrugs off its target while a second player is near | "I can't hurt it, you hit it" |
+| **Downed** | Die near a friend: crawl, bleed out, get helped up | Rescues through a crowd of monsters |
+| **Marked** | Elite kills can mark you; hit a player to pass it | Greed versus safety, hot potato |
 
-### How they interact (the point of keeping the set small)
-- Hexed players **lure** every mob, so they draw fire off a downed friend, or
-  onto one.
-- A Hex **jumps on death** to the nearest player. Stand next to the hexed guy
-  and protect him, or keep your distance.
-- Warper swaps put a friend into a Hex ambush, or pull them away from a revive.
-- Magnetic clumps the group, and Volatile punishes clumps.
-- Warded makes solo hunting slow, so the group goes out together, so Downed
-  matters.
-- Digging means the group can't turtle up in a pillbox to wait out a Hex.
+### How they interact
+- A marked player draws monsters, which pulls them off a downed friend, or onto one.
+- A mark moves to the nearest player on death, so you can stand next to the marked player to protect them, or keep your distance.
+- Warping swaps put a friend into an ambush, or pull them away from a revive.
+- Magnetic clumps the group together, and Volatile punishes clumps.
+- Warded only works in groups, so groups need to coordinate.
+- Digging means the group can't wait out a mark in a sealed hole.
 
-## Guard rails (fun, not miserable)
-- **Hearth**: no natural hostiles, no digging, Hex frozen. Home is always home.
-- **Diggers** never touch block entities (chests, machines, storage), anything
-  harder than 5.0, the blacklist, or the Hearth, and each mob has a 32-block
-  lifetime budget. Broken blocks drop.
-- **Warper** never warps creative/spectator/downed players. Tosses need open
-  sky (otherwise sideways), and Nether rifts look for a safe landing.
-  Thief + Warper never roll together (an unwinnable chase).
-- **Thief** loot is indestructible and glowing when dropped, and drops when
-  the thief is killed *or* removed in any other way.
-- **Downed** never intercepts void or `/kill`, or anyone alone. Logging out
-  while down counts as giving up.
+## Guard rails
+- **Safe area**: no natural monsters and no digging. A mark still runs out
+  there but pays nothing, so going home is always an option.
+- **Digging** only takes blocks in `furtherout:diggable` (natural terrain).
+  It never touches block entities and never digs within 8 blocks of one (a
+  bed, chest, furnace or machine), and each mob has a 12-block budget.
+- **Warping** recharges for 12 seconds, and a shield stops it. It never
+  affects creative, spectator or downed players. Tosses need open sky.
+  Nether rifts only happen at level 4 and pull you back after 20 seconds.
+  Thieving and Warping never roll together.
+- **Thieving** never takes the held item or anything unstackable. The thief
+  can't despawn while carrying, and the loot is indestructible when it drops.
+- **Volatile** damage is capped at 8 (before armour) and breaks no blocks.
+- **Downed** never intercepts void deaths, `/kill`, or anyone alone.
+  Logging out while down counts as giving up.
 - **Farms**: spawners, spawn eggs, commands, breeding and conversions are
   never scaled, promoted or made to dig.
 
-## What was cut (and why)
-An earlier draft had Heat, a Marks currency, a shop, a contract board,
-charters, surge nights and supply caches. They were reasonable ideas, but
-each one added bookkeeping and menus rather than moments between players.
-They're in git history if a later version wants one back.
+## What was cut
+- An earlier draft had heat, a currency, a shop, contracts, surge nights and
+  supply caches. All of it was bookkeeping rather than moments between
+  players.
+- A later version had named rings with flavour text, big animated titles,
+  generated elite names and server-wide announcements. That was too loud for
+  a pack that otherwise feels like Minecraft.
 
-## Possible next steps (only if the group asks)
-- **Nemesis**: a champion that kills a player keeps its name, gains an ability
-  and comes back.
-- **Outposts**: a second Hearth-like safe point the group has to build and defend.
-- **One more ability per ring tier**, if five gets stale.
-- Tuning pass after real play: dig chances, bleed-out time, Hex duration.
+All of it is in git history.
 
 ## Architecture
-- `core/`: pure Java, no Minecraft. It holds config parsing and validation
-  plus every rule (`DownedState`, `HexRules`, `DigRules`, warp rolls, magnet
-  math, ring lookup) and is unit-tested.
-- `src/main/java/.../`: thin NeoForge event glue. `mob/` covers spawning,
-  elites, abilities, the dig goal and rewards. `player/` covers Downed and
-  the Hex. `ring/` covers lookup and titles. `command/` holds `/rings`. One
-  `ServerTicker` drives all periodic work.
+- `core/` is pure Java with no Minecraft. It holds config parsing and
+  validation plus every rule (`DownedState`, `MarkRules`, `DigRules`, warp
+  rolls, magnet math, danger level lookup), and it is unit-tested.
+- `src/main/java/.../` is thin NeoForge event glue:
+  - `mob/`: spawning, elites, abilities, the dig goal, rewards
+  - `player/`: Downed, Marked, Nether rifts
+  - `ring/`: danger level lookup and the indicator
+  - `command/`: `/rings`
+  - `fx/`: sounds and the optional pack
+  - A single `ServerTicker` drives all periodic work.
 - No mixins, no registries, no network channels. That keeps it server-only
-  and maximally compatible with 400+ mods.
-- `gametest/`: in-game tests on a headless server, run in CI on every push.
+  and compatible with 400+ mods.
+- `gametest/` holds in-game tests on a headless server, run in CI on every push.

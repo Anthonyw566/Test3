@@ -41,6 +41,7 @@ public final class ResourcePacks {
     private static volatile String builtInUrl;
     private static volatile String builtInSha1;
     private static boolean warnedMissing;
+    private static boolean warnedWatch;
 
     private ResourcePacks() {
     }
@@ -115,8 +116,12 @@ public final class ResourcePacks {
                 }
             });
         } catch (RuntimeException e) {
-            FurtherOut.LOGGER.warn("Couldn't watch {}'s resource pack status; they'll get vanilla effects: {}",
-                    player.getName().getString(), e.toString());
+            // Expected for the in-game tests' mock players; worth one line for anyone else.
+            if (!warnedWatch) {
+                warnedWatch = true;
+                FurtherOut.LOGGER.warn("Couldn't watch {}'s resource pack status; they'll hear vanilla sounds: {}",
+                        player.getName().getString(), e.toString());
+            }
         }
     }
 
