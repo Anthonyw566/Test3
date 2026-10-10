@@ -16,13 +16,13 @@ class MechanicsConfigTest {
         List<String> errors = new ArrayList<>();
         MechanicsConfig c = MechanicsConfig.parse(MechanicsConfig.DEFAULT_JSON, errors);
         assertTrue(errors.isEmpty(), "default mechanics.json must have zero errors: " + errors);
-        assertEquals(240, c.warper().cooldownTicks());
-        assertEquals(400, c.warper().riftTicks());
+        assertEquals(120, c.warper().cooldownTicks());
+        assertEquals(600, c.warper().riftTicks());
         assertEquals(900, c.downed().bleedOutTicks());
         assertEquals(80, c.downed().reviveTicks());
         assertEquals(10.0, c.downed().ticksLostPerDamage(), 1e-9);
-        assertEquals(3000, c.marked().durationTicks());
-        assertTrue(c.digging().naturalBlocksOnly());
+        assertEquals(3600, c.marked().durationTicks());
+        assertFalse(c.digging().naturalBlocksOnly(), "hideouts made of planks aren't safe either");
         assertTrue(c.digging().baseRadius() > 0);
         assertTrue(c.digging().diggers().contains("minecraft:zombie"));
         assertTrue(c.digging().blockBlacklist().contains("minecraft:obsidian"));
@@ -65,13 +65,15 @@ class MechanicsConfigTest {
     }
 
     @Test
-    void annoyanceGuardsAreOnByDefault() {
+    void brutalButNeverUnfair() {
         MechanicsConfig c = MechanicsConfig.defaults();
-        assertTrue(c.warper().cooldownTicks() >= 200, "warps need a real recharge");
-        assertTrue(c.volatileAbility().maxDamage() <= 10, "a volatile blast must never one-shot");
-        assertTrue(c.warded().groupRange() > 0, "warded must not wall off solo players");
-        assertTrue(c.digging().maxBlocksPerMob() <= 16, "diggers breach, they don't excavate");
+        assertTrue(c.warper().cooldownTicks() > 0, "a warper still has to recharge between warps");
+        assertTrue(c.volatileAbility().maxDamage() * 1.5 < 20, "even on Hard, a blast never one-shots a full-health player");
+        assertTrue(c.warded().groupRange() > 0, "warded never walls off a solo player");
+        assertTrue(c.digging().baseRadius() > 0 && c.digging().protectBlockEntities(), "bases are never dug into");
+        assertTrue(c.digging().maxBlocksPerMob() > 0, "every digger runs out eventually");
         assertTrue(c.magnetic().needsLineOfSight(), "you can always duck a magnet");
+        assertTrue(c.thief().takeHeldItem() && c.thief().takeTools(), "nothing in your hotbar is safe from a thief");
     }
 
     @Test

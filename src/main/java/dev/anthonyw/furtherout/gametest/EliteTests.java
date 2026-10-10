@@ -162,43 +162,41 @@ public final class EliteTests {
     // ---------------------------------------------------------------- thief
 
     @GameTest(template = ARENA, batch = "thief", timeoutTicks = 120)
-    public static void thiefTakesSomethingSmallAndDropsItOnDeath(GameTestHelper h) {
+    public static void thiefCanTakeTheSwordOutOfYourHand(GameTestHelper h) {
         reset(h, "level2", "{ \"thief\": { \"procChance\": 1.0 } }");
         ServerPlayer a = player(h, "A", new BlockPos(4, 2, 4));
         a.getInventory().selected = 0;
-        a.getInventory().setItem(0, new ItemStack(Items.TORCH, 16));         // in hand: off limits
-        a.getInventory().setItem(1, new ItemStack(Items.DIAMOND, 3));        // fair game
-        a.getInventory().setItem(2, new ItemStack(Items.DIAMOND_PICKAXE));   // tool: off limits
+        a.getInventory().setItem(0, new ItemStack(Items.DIAMOND_SWORD)); // the only thing in the hotbar
         Husk thief = elite(h, new BlockPos(5, 2, 4), EliteModifier.THIEF);
         a.hurt(h.getLevel().damageSources().mobAttack(thief), 1f);
-        check(a.getInventory().getItem(1).isEmpty(), "the diamonds should be gone from the hotbar");
-        check(a.getInventory().getItem(0).is(Items.TORCH), "never what's in your hand");
-        check(a.getInventory().getItem(2).is(Items.DIAMOND_PICKAXE), "never a tool");
-        check(thief.getItemBySlot(EquipmentSlot.MAINHAND).is(Items.DIAMOND), "the thief should be holding them");
+        check(a.getInventory().getItem(0).isEmpty(), "the sword should be gone from A's hand");
+        check(thief.getItemBySlot(EquipmentSlot.MAINHAND).is(Items.DIAMOND_SWORD), "the thief should be holding it");
+        check(thief.hasEffect(net.minecraft.world.effect.MobEffects.GLOWING), "and glowing, so you can chase it");
         Vec3 where = thief.position();
         thief.kill();
         h.succeedWhen(() -> {
             List<ItemEntity> items = h.getLevel().getEntitiesOfClass(ItemEntity.class, new AABB(where, where).inflate(4),
-                    e -> e.getItem().is(Items.DIAMOND) && e.getItem().getCount() == 3);
-            check(!items.isEmpty(), "the stolen diamonds should drop where the thief died");
+                    e -> e.getItem().is(Items.DIAMOND_SWORD));
+            check(!items.isEmpty(), "the sword should drop where the thief died");
             check(items.get(0).isInvulnerable(), "recovered loot should be indestructible");
             cleanup(h);
         });
     }
 
-    @GameTest(template = ARENA, batch = "thief_tools", timeoutTicks = 40)
-    public static void thiefLeavesToolsAlone(GameTestHelper h) {
-        reset(h, "level2", "{ \"thief\": { \"procChance\": 1.0 } }");
+    @GameTest(template = ARENA, batch = "thief_gentle", timeoutTicks = 40)
+    public static void gentleThievesLeaveHandsAndToolsAlone(GameTestHelper h) {
+        reset(h, "level2", """
+                { "thief": { "procChance": 1.0, "takeHeldItem": false, "takeTools": false } }""");
         ServerPlayer a = player(h, "A", new BlockPos(4, 2, 4));
         a.getInventory().selected = 0;
-        a.getInventory().setItem(0, new ItemStack(Items.IRON_SWORD));
-        a.getInventory().setItem(1, new ItemStack(Items.IRON_PICKAXE));
-        a.getInventory().setItem(2, new ItemStack(Items.TOTEM_OF_UNDYING));
+        a.getInventory().setItem(0, new ItemStack(Items.TORCH, 16));         // in hand
+        a.getInventory().setItem(1, new ItemStack(Items.DIAMOND, 3));        // fair game
+        a.getInventory().setItem(2, new ItemStack(Items.DIAMOND_PICKAXE));   // a tool
         Husk thief = elite(h, new BlockPos(5, 2, 4), EliteModifier.THIEF);
         a.hurt(h.getLevel().damageSources().mobAttack(thief), 1f);
-        check(thief.getItemBySlot(EquipmentSlot.MAINHAND).isEmpty(), "nothing fair to take, so nothing taken");
-        check(a.getInventory().getItem(1).is(Items.IRON_PICKAXE) && a.getInventory().getItem(2).is(Items.TOTEM_OF_UNDYING),
-                "tools and totems stay put");
+        check(a.getInventory().getItem(1).isEmpty(), "the diamonds should be gone");
+        check(a.getInventory().getItem(0).is(Items.TORCH), "not what's in your hand");
+        check(a.getInventory().getItem(2).is(Items.DIAMOND_PICKAXE), "not a tool");
         done(h);
     }
 
@@ -218,7 +216,8 @@ public final class EliteTests {
         float mid = warded.getHealth();
         warded.hurt(h.getLevel().damageSources().playerAttack(b), 10f);
         float lossFromFriend = mid - warded.getHealth();
-        check(lossFromTarget <= 3f, "its target should barely scratch it, did " + lossFromTarget);
+        check(lossFromTarget <= 1.5f, "its target should barely scratch it, did " + lossFromTarget);
+        check(a.getHealth() < a.getMaxHealth(), "and hitting it should sting its target");
         check(lossFromFriend >= 6f, "a friend should hit it properly, did " + lossFromFriend);
         done(h);
     }
@@ -262,7 +261,7 @@ public final class EliteTests {
         h.runAfterDelay(60, () -> {
             float lost = a.getMaxHealth() - a.getHealth();
             check(lost > 0, "standing on it should still hurt");
-            check(lost <= 12.01f, "point blank is capped (8, x1.5 on Hard), lost " + lost);
+            check(lost <= 18.01f && a.isAlive(), "point blank hurts a lot but never one-shots (12, x1.5 on Hard), lost " + lost);
             done(h);
         });
     }

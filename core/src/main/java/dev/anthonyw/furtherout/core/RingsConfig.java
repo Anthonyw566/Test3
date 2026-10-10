@@ -227,27 +227,27 @@ public record RingsConfig(
                 { "id": "safe", "danger": 0, "outerRadius": 400, "safeZone": true },
                 {
                   "id": "level1", "danger": 1, "outerRadius": 1200,
-                  "mobs":   { "healthMult": 1.1, "damageMult": 1.1, "digChance": 0.2 },
-                  "elites": { "eliteChance": 0.04, "championChance": 0.0,
+                  "mobs":   { "healthMult": 1.1, "damageMult": 1.1, "digChance": 0.3 },
+                  "elites": { "eliteChance": 0.06, "championChance": 0.05,
                               "modifiers": ["warper", "thief", "volatile"],
                               "loot": "minecraft:chests/simple_dungeon" }
                 },
                 {
                   "id": "level2", "danger": 2, "outerRadius": 2800,
-                  "mobs":   { "healthMult": 1.25, "damageMult": 1.2, "digChance": 0.35 },
-                  "elites": { "eliteChance": 0.06, "championChance": 0.1, "modifiers": ["*"],
+                  "mobs":   { "healthMult": 1.25, "damageMult": 1.2, "digChance": 0.5 },
+                  "elites": { "eliteChance": 0.09, "championChance": 0.15, "modifiers": ["*"],
                               "loot": "minecraft:chests/abandoned_mineshaft" }
                 },
                 {
                   "id": "level3", "danger": 3, "outerRadius": 5600,
-                  "mobs":   { "healthMult": 1.4, "damageMult": 1.3, "digChance": 0.5 },
-                  "elites": { "eliteChance": 0.08, "championChance": 0.2, "modifiers": ["*"],
+                  "mobs":   { "healthMult": 1.4, "damageMult": 1.35, "digChance": 0.7 },
+                  "elites": { "eliteChance": 0.12, "championChance": 0.25, "modifiers": ["*"],
                               "loot": "minecraft:chests/stronghold_corridor" }
                 },
                 {
                   "id": "level4", "danger": 4, "outerRadius": -1,
-                  "mobs":   { "healthMult": 1.6, "damageMult": 1.45, "digChance": 0.65 },
-                  "elites": { "eliteChance": 0.1, "championChance": 0.3, "modifiers": ["*"],
+                  "mobs":   { "healthMult": 1.6, "damageMult": 1.5, "digChance": 0.9 },
+                  "elites": { "eliteChance": 0.15, "championChance": 0.4, "modifiers": ["*"],
                               "loot": "minecraft:chests/ancient_city" }
                 }
               ],

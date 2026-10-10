@@ -12,7 +12,7 @@ class NoiseRulesTest {
     @Test
     void explosionsCarryFurtherThanFights() {
         assertTrue(NoiseRules.radius(NoiseRules.Kind.EXPLOSION, CFG) > NoiseRules.radius(NoiseRules.Kind.COMBAT, CFG));
-        assertEquals(12, NoiseRules.radius(NoiseRules.Kind.COMBAT, CFG), 1e-9);
+        assertEquals(CFG.combatRadius(), NoiseRules.radius(NoiseRules.Kind.COMBAT, CFG), 1e-9);
     }
 
     @Test

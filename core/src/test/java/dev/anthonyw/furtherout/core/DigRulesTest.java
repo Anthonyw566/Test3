@@ -23,9 +23,18 @@ class DigRulesTest {
     }
 
     @Test
-    void buildingBlocksAreNeverTouched() {
+    void makeshiftShelterIsFairGame() {
         Verdict planks = DigRules.canBreak(new DigRules.Block(false, 2.0f, false, "minecraft:oak_planks", false),
                 new DigRules.Place(false, false, 0), CFG);
+        assertEquals(Verdict.OK, planks, "a plank hut with no bed or chest in it is just a box");
+    }
+
+    @Test
+    void naturalOnlyModeLeavesBuildingsAlone() {
+        MechanicsConfig.Digging gentle = MechanicsConfig.parse("{ \"digging\": { \"naturalBlocksOnly\": true } }",
+                new java.util.ArrayList<>()).digging();
+        Verdict planks = DigRules.canBreak(new DigRules.Block(false, 2.0f, false, "minecraft:oak_planks", false),
+                new DigRules.Place(false, false, 0), gentle);
         assertEquals(Verdict.NOT_NATURAL, planks);
     }
 
@@ -59,13 +68,14 @@ class DigRulesTest {
     void obsidianAndBedrockHold() {
         assertEquals(Verdict.TOO_HARD, check(50f, false, "minecraft:obsidian", false, 0));
         assertEquals(Verdict.UNBREAKABLE, check(-1f, false, "minecraft:bedrock", false, 0));
-        assertEquals(Verdict.BLACKLISTED, check(5f, false, "minecraft:respawn_anchor", false, 0));
+        assertEquals(Verdict.BLACKLISTED, check(1f, false, "minecraft:respawn_anchor", false, 0));
     }
 
     @Test
     void budgetRunsOut() {
-        assertEquals(Verdict.OK, check(1.5f, false, "minecraft:stone", false, 11));
-        assertEquals(Verdict.BUDGET_SPENT, check(1.5f, false, "minecraft:stone", false, 12));
+        int budget = CFG.maxBlocksPerMob();
+        assertEquals(Verdict.OK, check(1.5f, false, "minecraft:stone", false, budget - 1));
+        assertEquals(Verdict.BUDGET_SPENT, check(1.5f, false, "minecraft:stone", false, budget));
     }
 
     @Test

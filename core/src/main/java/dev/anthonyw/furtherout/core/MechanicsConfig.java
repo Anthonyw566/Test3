@@ -39,7 +39,7 @@ public record MechanicsConfig(
      */
     public record Warper(double procChance, int cooldownTicks, int tossWeight, int swapWeight,
                          int scatterWeight, double swapRange, double netherRiftChance,
-                         List<String> netherRiftRings, int riftTicks) {
+                         List<String> netherRiftRings, int riftTicks, int tossHeight) {
         public enum Effect { TOSS, SWAP, SCATTER }
 
         public Effect roll(Rand random) {
@@ -59,7 +59,8 @@ public record MechanicsConfig(
         }
     }
 
-    public record Thief(double procChance, int fleeTicks) {
+    /** A thief takes one hotbar stack; by default that includes what's in your hand, tools and all. */
+    public record Thief(double procChance, int fleeTicks, boolean takeHeldItem, boolean takeTools) {
     }
 
     public record Magnetic(int intervalTicks, int windupTicks, double radius, double strength, double lift,
@@ -70,8 +71,12 @@ public record MechanicsConfig(
     public record Volatile(int fuseTicks, double power, double maxDamage) {
     }
 
-    /** Warding only works while another player is within {@code groupRange} (0 = always). */
-    public record Warded(double targetDamageMultiplier, double groupRange) {
+    /**
+     * Warding only works while another player is within {@code groupRange} (0 = always).
+     * Its target's hits are cut to {@code targetDamageMultiplier}, and {@code reflectFraction}
+     * of what was cut stings them back.
+     */
+    public record Warded(double targetDamageMultiplier, double groupRange, double reflectFraction) {
     }
 
     public record Digging(boolean enabled, boolean elitesAlwaysDig, double senseRange,
@@ -145,52 +150,56 @@ public record MechanicsConfig(
         JsonObject w = Json.obj(root, "warper");
         Warper warper = new Warper(
                 Json.num(w, "procChance", 1.0, 0, 1, "warper", errors),
-                ticks(Json.num(w, "cooldownSeconds", 12, 0, 600, "warper", errors)),
+                ticks(Json.num(w, "cooldownSeconds", 6, 0, 600, "warper", errors)),
                 Json.integer(w, "tossWeight", 30, 0, 1000, "warper", errors),
                 Json.integer(w, "swapWeight", 40, 0, 1000, "warper", errors),
                 Json.integer(w, "scatterWeight", 30, 0, 1000, "warper", errors),
                 Json.num(w, "swapRange", 24, 0, 256, "warper", errors),
-                Json.num(w, "netherRiftChance", 0.1, 0, 1, "warper", errors),
-                ringIds(w, "netherRiftRings", List.of("level4"), errors),
-                ticks(Json.num(w, "riftSeconds", 20, 3, 600, "warper", errors)));
+                Json.num(w, "netherRiftChance", 0.15, 0, 1, "warper", errors),
+                ringIds(w, "netherRiftRings", List.of("level3", "level4"), errors),
+                ticks(Json.num(w, "riftSeconds", 30, 3, 600, "warper", errors)),
+                Json.integer(w, "tossHeight", 14, 6, 64, "warper", errors));
 
         JsonObject t = Json.obj(root, "thief");
         Thief thief = new Thief(
-                Json.num(t, "procChance", 0.35, 0, 1, "thief", errors),
-                ticks(Json.num(t, "fleeSeconds", 20, 1, 600, "thief", errors)));
+                Json.num(t, "procChance", 0.5, 0, 1, "thief", errors),
+                ticks(Json.num(t, "fleeSeconds", 30, 1, 600, "thief", errors)),
+                Json.bool(t, "takeHeldItem", true, "thief", errors),
+                Json.bool(t, "takeTools", true, "thief", errors));
 
         JsonObject m = Json.obj(root, "magnetic");
         Magnetic magnetic = new Magnetic(
-                ticks(Json.num(m, "intervalSeconds", 12, 1, 600, "magnetic", errors)),
+                ticks(Json.num(m, "intervalSeconds", 8, 1, 600, "magnetic", errors)),
                 Json.integer(m, "windupTicks", 30, 0, 200, "magnetic", errors),
-                Json.num(m, "radius", 10, 1, 64, "magnetic", errors),
-                Json.num(m, "strength", 1.0, 0, 5, "magnetic", errors),
-                Json.num(m, "lift", 0.35, 0, 3, "magnetic", errors),
+                Json.num(m, "radius", 14, 1, 64, "magnetic", errors),
+                Json.num(m, "strength", 1.4, 0, 5, "magnetic", errors),
+                Json.num(m, "lift", 0.5, 0, 3, "magnetic", errors),
                 Json.bool(m, "needsLineOfSight", true, "magnetic", errors));
 
         JsonObject v = Json.obj(root, "volatile");
         Volatile vol = new Volatile(
-                Json.integer(v, "fuseTicks", 40, 1, 200, "volatile", errors),
-                Json.num(v, "power", 2.5, 0.5, 8, "volatile", errors),
-                Json.num(v, "maxDamage", 8, 1, 100, "volatile", errors));
+                Json.integer(v, "fuseTicks", 30, 1, 200, "volatile", errors),
+                Json.num(v, "power", 3.5, 0.5, 8, "volatile", errors),
+                Json.num(v, "maxDamage", 12, 1, 100, "volatile", errors));
 
         JsonObject wd = Json.obj(root, "warded");
         Warded warded = new Warded(
-                Json.num(wd, "targetDamageMultiplier", 0.25, 0, 1, "warded", errors),
-                Json.num(wd, "groupRange", 24, 0, 256, "warded", errors));
+                Json.num(wd, "targetDamageMultiplier", 0.1, 0, 1, "warded", errors),
+                Json.num(wd, "groupRange", 24, 0, 256, "warded", errors),
+                Json.num(wd, "reflectFraction", 0.3, 0, 2, "warded", errors));
 
         JsonObject d = Json.obj(root, "digging");
         Digging digging = new Digging(
                 Json.bool(d, "enabled", true, "digging", errors),
                 Json.bool(d, "elitesAlwaysDig", true, "digging", errors),
-                Json.num(d, "senseRange", 10, 0, 64, "digging", errors),
-                Json.num(d, "maxHardness", 5.0, 0, 1000, "digging", errors),
-                Json.integer(d, "maxBlocksPerMob", 12, 0, 10000, "digging", errors),
+                Json.num(d, "senseRange", 16, 0, 64, "digging", errors),
+                Json.num(d, "maxHardness", 3.0, 0, 1000, "digging", errors),
+                Json.integer(d, "maxBlocksPerMob", 32, 0, 10000, "digging", errors),
                 Json.bool(d, "dropBlocks", true, "digging", errors),
-                Json.num(d, "breakSpeed", 1.0, 0.1, 20, "digging", errors),
+                Json.num(d, "breakSpeed", 1.5, 0.1, 20, "digging", errors),
                 Json.bool(d, "protectBlockEntities", true, "digging", errors),
-                Json.bool(d, "naturalBlocksOnly", true, "digging", errors),
-                Json.integer(d, "baseRadius", 8, 0, 64, "digging", errors),
+                Json.bool(d, "naturalBlocksOnly", false, "digging", errors),
+                Json.integer(d, "baseRadius", 6, 0, 64, "digging", errors),
                 Json.bool(d, "respectMobGriefingRule", false, "digging", errors),
                 Json.ids(d, "diggers", DEFAULT_DIGGERS, "digging", errors),
                 Json.ids(d, "blockBlacklist", List.of("minecraft:obsidian", "minecraft:crying_obsidian",
@@ -211,17 +220,17 @@ public record MechanicsConfig(
         JsonObject mk = Json.obj(root, "marked");
         Marked marked = new Marked(
                 Json.bool(mk, "enabled", true, "marked", errors),
-                ticks(Json.num(mk, "durationSeconds", 150, 10, 3600, "marked", errors)),
-                Json.num(mk, "eliteChance", 0.15, 0, 1, "marked", errors),
+                ticks(Json.num(mk, "durationSeconds", 180, 10, 3600, "marked", errors)),
+                Json.num(mk, "eliteChance", 0.3, 0, 1, "marked", errors),
                 Json.bool(mk, "championAlways", true, "marked", errors),
                 Json.num(mk, "lureRadius", 16, 0, 64, "marked", errors),
-                ticks(Json.num(mk, "ambushEverySeconds", 60, 5, 3600, "marked", errors)),
-                ticks(Json.num(mk, "firstAmbushAfterSeconds", 30, 0, 3600, "marked", errors)),
-                Json.integer(mk, "ambushBaseSize", 2, 0, 20, "marked", errors),
+                ticks(Json.num(mk, "ambushEverySeconds", 40, 5, 3600, "marked", errors)),
+                ticks(Json.num(mk, "firstAmbushAfterSeconds", 20, 0, 3600, "marked", errors)),
+                Json.integer(mk, "ambushBaseSize", 3, 0, 20, "marked", errors),
                 Json.ids(mk, "ambushMobs", DEFAULT_AMBUSH_MOBS, "marked", errors),
                 ticks(Json.num(mk, "passBackImmunitySeconds", 10, 0, 600, "marked", errors)),
                 Json.num(mk, "jumpRange", 48, 0, 512, "marked", errors),
-                ticks(Json.num(mk, "minJumpSeconds", 45, 0, 3600, "marked", errors)),
+                ticks(Json.num(mk, "minJumpSeconds", 60, 0, 3600, "marked", errors)),
                 Json.integer(mk, "survivalXp", 100, 0, 100000, "marked", errors),
                 Json.bool(mk, "doubleDrops", true, "marked", errors));
 
@@ -236,8 +245,8 @@ public record MechanicsConfig(
         JsonObject nz = Json.obj(root, "noise");
         Noise noise = new Noise(
                 Json.bool(nz, "enabled", true, "noise", errors),
-                Json.num(nz, "explosionRadius", 32, 0, 128, "noise", errors),
-                Json.num(nz, "combatRadius", 12, 0, 64, "noise", errors),
+                Json.num(nz, "explosionRadius", 48, 0, 128, "noise", errors),
+                Json.num(nz, "combatRadius", 16, 0, 64, "noise", errors),
                 ticks(Json.num(nz, "combatCooldownSeconds", 5, 0, 600, "noise", errors)),
                 ticks(Json.num(nz, "investigateSeconds", 30, 1, 600, "noise", errors)));
 
@@ -336,47 +345,51 @@ public record MechanicsConfig(
               },
               "warper": {
                 "procChance": 1.0,
-                "cooldownSeconds": 12,
+                "cooldownSeconds": 6,
                 "tossWeight": 30,
                 "swapWeight": 40,
                 "scatterWeight": 30,
                 "swapRange": 24,
-                "netherRiftChance": 0.1,
-                "netherRiftRings": ["level4"],
-                "riftSeconds": 20
+                "netherRiftChance": 0.15,
+                "netherRiftRings": ["level3", "level4"],
+                "riftSeconds": 30,
+                "tossHeight": 14
               },
               "thief": {
-                "procChance": 0.35,
-                "fleeSeconds": 20
+                "procChance": 0.5,
+                "fleeSeconds": 30,
+                "takeHeldItem": true,
+                "takeTools": true
               },
               "magnetic": {
-                "intervalSeconds": 12,
+                "intervalSeconds": 8,
                 "windupTicks": 30,
-                "radius": 10,
-                "strength": 1.0,
-                "lift": 0.35,
+                "radius": 14,
+                "strength": 1.4,
+                "lift": 0.5,
                 "needsLineOfSight": true
               },
               "volatile": {
-                "fuseTicks": 40,
-                "power": 2.5,
-                "maxDamage": 8
+                "fuseTicks": 30,
+                "power": 3.5,
+                "maxDamage": 12
               },
               "warded": {
-                "targetDamageMultiplier": 0.25,
-                "groupRange": 24
+                "targetDamageMultiplier": 0.1,
+                "groupRange": 24,
+                "reflectFraction": 0.3
               },
               "digging": {
                 "enabled": true,
                 "elitesAlwaysDig": true,
-                "senseRange": 10,
-                "maxHardness": 5.0,
-                "maxBlocksPerMob": 12,
+                "senseRange": 16,
+                "maxHardness": 3.0,
+                "maxBlocksPerMob": 32,
                 "dropBlocks": true,
-                "breakSpeed": 1.0,
+                "breakSpeed": 1.5,
                 "protectBlockEntities": true,
-                "naturalBlocksOnly": true,
-                "baseRadius": 8,
+                "naturalBlocksOnly": false,
+                "baseRadius": 6,
                 "respectMobGriefingRule": false,
                 "diggers": [
                   "minecraft:zombie", "minecraft:husk", "minecraft:drowned", "minecraft:zombie_villager",
@@ -399,18 +412,18 @@ public record MechanicsConfig(
               },
               "marked": {
                 "enabled": true,
-                "durationSeconds": 150,
-                "eliteChance": 0.15,
+                "durationSeconds": 180,
+                "eliteChance": 0.3,
                 "championAlways": true,
                 "lureRadius": 16,
-                "firstAmbushAfterSeconds": 30,
-                "ambushEverySeconds": 60,
-                "ambushBaseSize": 2,
+                "firstAmbushAfterSeconds": 20,
+                "ambushEverySeconds": 40,
+                "ambushBaseSize": 3,
                 "ambushMobs": ["minecraft:zombie", "minecraft:husk", "minecraft:skeleton",
                                "minecraft:spider", "minecraft:creeper", "minecraft:vindicator"],
                 "passBackImmunitySeconds": 10,
                 "jumpRange": 48,
-                "minJumpSeconds": 45,
+                "minJumpSeconds": 60,
                 "survivalXp": 100,
                 "doubleDrops": true
               },
@@ -423,8 +436,8 @@ public record MechanicsConfig(
               },
               "noise": {
                 "enabled": true,
-                "explosionRadius": 32,
-                "combatRadius": 12,
+                "explosionRadius": 48,
+                "combatRadius": 16,
                 "combatCooldownSeconds": 5,
                 "investigateSeconds": 30
               },

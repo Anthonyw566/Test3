@@ -35,10 +35,10 @@ shows above your hotbar ("Danger level 2") with a soft sound.
 | Level | Distance | What changes |
 |---|---|---|
 | **Safe area** | 0–400 | No monsters spawn and nothing digs. |
-| **1** | 400–1,200 | Monsters a little tougher, a few dig, the first elites. |
-| **2** | 1,200–2,800 | More diggers, all five abilities, the first champions. |
-| **3** | 2,800–5,600 | Tougher again, champions more common. |
-| **4** | 5,600+ | The toughest. Warps can pull you into the Nether for a moment. |
+| **1** | 400–1,200 | Monsters a little tougher, a third of them dig, elites start showing up. |
+| **2** | 1,200–2,800 | Half of them dig, all five abilities, champions. |
+| **3** | 2,800–5,600 | Most of them dig, 1 in 8 is an elite, warps can drop you into the Nether. |
+| **4** | 5,600+ | Nearly everything digs, elites everywhere, champions common. |
 
 **At night, danger reaches closer to spawn**: every level's edge pulls about
 a fifth of the way in (the safe area stays put), so a spot that's level 1 by
@@ -49,18 +49,19 @@ The Nether counts as level 3 and the End as level 4. Other dimensions
 (mining dimensions etc.) are left alone. Spawner farms are never touched.
 
 ### Digging
-Outside the safe area, some monsters dig through stone and dirt to reach a
-player they can't get to. You can't hide in a hole in the ground. You'll
-hear the cracking first.
+Outside the safe area, monsters dig to reach a player they can't get to:
+most of them by level 3, nearly all of them at level 4. A hole in the
+ground, a pillar, a plank hut thrown up for the night: none of it is safe.
+You'll hear the cracking first.
 
-They only dig **natural terrain** (stone, dirt, sand, gravel, netherrack and
-so on). They never break anything you'd build with, and they never dig
-within 8 blocks of a bed, chest, furnace or machine. Each one gives up after
-12 blocks.
+They dig anything up to deepslate hardness (stone, dirt, planks, cobble,
+glass, bricks), but never obsidian, never chests or machines themselves,
+and never within 6 blocks of a bed, chest, furnace or machine, so a real
+base stays intact. Each one gives up after 32 blocks.
 
 ### Noise
 Explosions and fights carry. Idle monsters within earshot come over to see
-what's going on (about 32 blocks for an explosion, 12 for a fight), and you
+what's going on (about 48 blocks for an explosion, 16 for a fight), and you
 usually hear a groan or two first. A fight only makes noise every few
 seconds, so a long fight doesn't keep pulling more in. The safe area stays
 quiet.
@@ -72,11 +73,11 @@ ability shows itself before it acts and has a counter:
 
 | Ability | What it does | Counter |
 |---|---|---|
-| **Warping** | Swirls purple when charged. A charged hit teleports you: up into the air, a few blocks away, or **swapped with a nearby friend**. | Block the hit with a shield, or back off while it swirls. It needs 12 s to recharge. |
-| **Thieving** | Grabs one stackable item from your hotbar and runs, glowing and shedding crumbs of it. It never takes what's in your hand, and never tools, weapons, armour or totems. | Chase it down. The item drops when it dies and can't burn or despawn. |
-| **Magnetic** | Clicks, draws sparks to everyone it can see, then reels them in. | Get behind a block when you hear the click. |
-| **Volatile** | Hisses like a creeper for two seconds after it dies, then explodes. Blocks are never broken, and the damage is capped. | Step back. |
-| **Warded** | Barely hurt by the player it's chasing, **but only while a second player is close by**. | Someone else hits it. Solo players fight a normal mob. |
+| **Warping** | Swirls purple when charged. A charged hit teleports you: **14 blocks straight up**, 10–20 blocks away, or **swapped with a nearby friend**. At levels 3 and 4 it can drop you into the Nether for 30 seconds before pulling you back. | Block the hit with a shield, or back off while it swirls. It recharges in 6 s. Bring a water bucket. |
+| **Thieving** | Grabs a stack from your hotbar, **the sword in your hand included**, and runs fast, glowing and shedding crumbs of it. | Chase it down. The item drops when it dies and can't burn or despawn. |
+| **Magnetic** | Every 8 s it clicks, draws sparks to everyone within 14 blocks who can see it, then yanks them off their feet toward it. | Get behind a block when you hear the click. |
+| **Volatile** | Hisses like a creeper for a second and a half after it dies, then explodes. Up to 6 hearts (9 on Hard), never quite a one-shot. Blocks are never broken. | Step back. |
+| **Warded** | Barely scratched by the player it's chasing, and **hitting it stings you**, while a second player is close by. | Someone else hits it. Solo players fight a normal mob. |
 
 Elites drop extra loot from their danger level's loot table (champions
 roll twice) and bonus XP. Warping champions sometimes drop a **Warped Ender
@@ -95,15 +96,17 @@ a revive. Hold sneak to give up. If you're alone, fall into the void or use
 `/kill`, you just die.
 
 ### Marked
-Killing an elite can mark you (a champion always does). For 2½ minutes:
+Killing an elite can mark you (30% of the time; a champion always does).
+For 3 minutes:
 - you glow, and monsters nearby come for you
-- a couple of small groups find you
+- a pack of monsters finds you every 40 seconds
 - **everything you kill drops double**
 
-A purple boss bar shows the time left. If it runs out while you're away
-from spawn, you get some XP and loot. Or **hit another player** to hand it
-over; they can't pass it straight back. Going home always works, but the
-mark pays nothing there. If you die marked, it moves to the nearest player.
+A purple boss bar shows the time left. Outlast it and you get some XP and
+loot. Or **hit another player** to hand it over; they can't pass it straight
+back. The timer **stops in the safe area**, so you can't wait it out at
+home... but you can bring it home and smack whoever's busy building. If you
+die marked, it moves to the nearest player.
 
 ### When you die
 Away from spawn, your things don't scatter. A weak zombie **wearing your
@@ -160,14 +163,16 @@ the server. A bad value falls back to its default.
 | If it feels like… | Change |
 |---|---|
 | Too much digging | `rings.json`: lower `mobs.digChance`, or `mechanics.json`: `digging.maxBlocksPerMob` |
-| Diggers get too close to bases | `digging.baseRadius` (default 8) |
+| Diggers should leave anything built alone | `digging.naturalBlocksOnly: true` (natural terrain only) |
+| Diggers get too close to bases | `digging.baseRadius` (default 6) |
 | The sounds in the dark get on your nerves | `darkSounds.minMinutes` / `maxMinutes`, or `"darkSounds": { "enabled": false }` |
 | Bait is too common, or the wrong things | `mimic.chance` (default 0.004 of cave spawns), `mimic.baits`, `mimic.mobs` |
 | Too many monsters join fights | `noise.combatRadius`, `noise.explosionRadius`, or `"noise": { "enabled": false }` |
 | Elites everywhere, or too rare | `elites.eliteChance` and `championChance` per level |
 | Downed is too forgiving or too harsh | `downed.bleedOutSeconds`, `reviveSeconds`, `rescueRange` |
 | Marked is too much | `marked.durationSeconds`, `marked.ambushEverySeconds`, `marked.ambushBaseSize` |
-| Warpers too chaotic | `warper.cooldownSeconds`, or set `swapWeight` to 0 to stop friend swaps |
+| Warpers too chaotic | `warper.cooldownSeconds`, `warper.tossHeight`, or set `swapWeight` to 0 to stop friend swaps |
+| Thieves taking swords is too mean | `thief.takeHeldItem: false`, `thief.takeTools: false` |
 | Volatile hits too hard | `volatile.maxDamage` |
 | You'd rather have vanilla item drops on death | `"keeper": { "enabled": false }` |
 | You don't want the sound pack offered | `mechanics.json`: `"resourcePack": { "enabled": false }` |

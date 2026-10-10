@@ -78,14 +78,12 @@ public final class MarkedTests {
     }
 
     @GameTest(template = ARENA, batch = "mark_safe", timeoutTicks = 120)
-    public static void markRunsOutAtHomeWithoutReward(GameTestHelper h) {
+    public static void markWaitsForYouAtHome(GameTestHelper h) {
         reset(h, "safe", "{}");
         ServerPlayer a = player(h, "A", new BlockPos(4, 2, 4));
         MarkManager.INSTANCE.give(a, 30);
         h.runAfterDelay(70, () -> {
-            check(MarkManager.remaining(a) == 0, "the timer runs at home too");
-            List<ExperienceOrb> orbs = h.getLevel().getEntitiesOfClass(ExperienceOrb.class, a.getBoundingBox().inflate(4));
-            check(orbs.isEmpty(), "waiting it out at home pays nothing");
+            check(MarkManager.remaining(a) == 30, "you can't wait it out at home, has " + MarkManager.remaining(a));
             done(h);
         });
     }
@@ -129,13 +127,13 @@ public final class MarkedTests {
     }
 
     @GameTest(template = ARENA, batch = "mark_ambush", timeoutTicks = 120, skyAccess = true)
-    public static void ambushesAreSmall(GameTestHelper h) {
+    public static void ambushesComeInPacks(GameTestHelper h) {
         reset(h, "level4", "{ \"marked\": { \"firstAmbushAfterSeconds\": 1, \"ambushMobs\": [\"minecraft:husk\"] } }");
         ServerPlayer a = player(h, "A", new BlockPos(8, 2, 8));
         MarkManager.INSTANCE.give(a, 2000);
         h.runAfterDelay(70, () -> {
             int husks = h.getLevel().getEntitiesOfClass(Husk.class, new AABB(a.blockPosition()).inflate(24)).size();
-            check(husks >= 1 && husks <= 4, "one small ambush expected at danger 4, found " + husks);
+            check(husks >= 1 && husks <= 5, "one ambush of up to five expected at danger 4, found " + husks);
             done(h);
         });
     }

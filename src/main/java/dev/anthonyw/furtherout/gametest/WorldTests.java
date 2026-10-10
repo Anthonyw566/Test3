@@ -292,14 +292,14 @@ public final class WorldTests {
         });
     }
 
-    @GameTest(template = ARENA, batch = "dig_built", timeoutTicks = 400)
-    public static void diggersLeaveBuildingBlocksAlone(GameTestHelper h) {
+    @GameTest(template = ARENA, batch = "dig_built", timeoutTicks = 600)
+    public static void aPlankHutIsNoSaferThanAHole(GameTestHelper h) {
         reset(h, "level3", "{}");
         List<BlockPos> shell = buildBunker(h, Blocks.OAK_PLANKS);
         digger(h, player(h, "Hider", BUNKER));
-        h.runAfterDelay(300, () -> {
-            shell.forEach(pos -> h.assertBlockPresent(Blocks.OAK_PLANKS, pos));
-            done(h);
+        h.succeedWhen(() -> {
+            check(shell.stream().anyMatch(pos -> h.getBlockState(pos).isAir()), "the husk should chew through the planks");
+            cleanup(h);
         });
     }
 

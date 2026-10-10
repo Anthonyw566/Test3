@@ -45,12 +45,12 @@ import java.util.UUID;
  * Marked - a hot potato.
  *
  * Killing an elite can mark you (champions always do). While marked you glow,
- * nearby monsters come for you, a couple of small ambushes find you, and
- * everything you kill drops double. A purple boss bar shows the time left.
- * Let it run out away from spawn for some XP and loot - or hit another player
- * to hand it over (no tag-backs for a few seconds). Going home is always an
- * option; the mark just runs out there without paying anything. If you die
- * marked, it moves to the nearest player.
+ * nearby monsters come for you, ambushes keep finding you, and everything
+ * you kill drops double. A purple boss bar shows the time left. Outlast it
+ * for some XP and loot - or hit another player to hand it over (no tag-backs
+ * for a few seconds). The timer stops at home, so you can't wait it out
+ * there... but you can bring it home and smack whoever is busy building.
+ * If you die marked, it moves to the nearest player.
  */
 public final class MarkManager {
     public static final MarkManager INSTANCE = new MarkManager();
@@ -97,7 +97,7 @@ public final class MarkManager {
 
     private static void explain(ServerPlayer player) {
         Tips.once(player, "marked", "Marked: monsters nearby come for you and everything you kill drops double."
-                + " Let it run out away from spawn for a reward, or hit another player to pass it on.");
+                + " Outlast it for a reward (the timer stops at home), or hit another player to pass it on.");
     }
 
     public void clear(ServerPlayer player) {
@@ -215,7 +215,7 @@ public final class MarkManager {
             }
             Ring ring = RingManager.ringOf(player);
             boolean safe = ring != null && ring.safeZone();
-            int after = MarkRules.tick(before, 20);
+            int after = MarkRules.tick(before, safe, 20);
             store(player, after);
 
             player.addEffect(new MobEffectInstance(MobEffects.GLOWING, 50, 0, false, false));

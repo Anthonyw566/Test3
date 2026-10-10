@@ -4,9 +4,10 @@ import java.util.List;
 
 /**
  * Being marked: killing an elite can mark you (champions always do). While
- * marked you glow, nearby monsters come for you, a couple of small ambushes
- * find you, and everything you kill drops double. Wait it out, or hit another
- * player to hand it over. If you die marked, it moves to the nearest player.
+ * marked you glow, nearby monsters come for you, ambushes keep finding you,
+ * and everything you kill drops double. Outlast it away from spawn (the
+ * timer stops at home), or hit another player to hand it over. If you die
+ * marked, it moves to the nearest player.
  *
  * Rules here are pure so they can be tested; the mod layer applies effects.
  */
@@ -17,8 +18,15 @@ public final class MarkRules {
     private MarkRules() {
     }
 
-    /** Remaining ticks after {@code dt}. The timer always runs, safe area included. */
-    public static int tick(int remaining, int dt) {
+    /**
+     * Remaining ticks after {@code dt}. The timer stops in the safe area: you
+     * can't wait a mark out at home - but you can bring it home and hit
+     * whoever's busy building.
+     */
+    public static int tick(int remaining, boolean inSafeArea, int dt) {
+        if (inSafeArea) {
+            return Math.max(0, remaining);
+        }
         return Math.max(0, remaining - dt);
     }
 

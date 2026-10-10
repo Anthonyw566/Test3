@@ -12,10 +12,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class MarkRulesTest {
 
     @Test
-    void ticksDownEverywhere() {
-        assertEquals(80, MarkRules.tick(100, 20));
-        assertEquals(0, MarkRules.tick(10, 20));
-        assertEquals(0, MarkRules.tick(0, 20));
+    void ticksDownOutsideAndStopsAtHome() {
+        assertEquals(80, MarkRules.tick(100, false, 20));
+        assertEquals(100, MarkRules.tick(100, true, 20), "you can't wait it out at home");
+        assertEquals(0, MarkRules.tick(10, false, 20));
+        assertEquals(0, MarkRules.tick(0, false, 20));
     }
 
     @Test
@@ -71,7 +72,7 @@ class MarkRulesTest {
     }
 
     @Test
-    void defaultMarkHasAtMostTwoAmbushes() {
+    void defaultMarkKeepsTheAmbushesComing() {
         MechanicsConfig.Marked cfg = MechanicsConfig.defaults().marked();
         int remaining = cfg.durationTicks();
         long now = 0;
@@ -83,9 +84,9 @@ class MarkRulesTest {
                 due = now + cfg.ambushEveryTicks();
             }
             now += 20;
-            remaining = MarkRules.tick(remaining, 20);
+            remaining = MarkRules.tick(remaining, false, 20);
         }
-        assertTrue(ambushes >= 1 && ambushes <= 2, "ambushes per mark: " + ambushes);
+        assertTrue(ambushes >= 3 && ambushes <= 5, "ambushes per mark: " + ambushes);
     }
 
     @Test

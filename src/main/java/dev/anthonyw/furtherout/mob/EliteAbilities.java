@@ -25,6 +25,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
@@ -55,10 +56,10 @@ import java.util.List;
  * touches a player.
  *
  * Warping   recharges, then swirls with portal particles; a charged hit teleports you. A shield stops it.
- * Thieving  grabs one stackable hotbar item (never what you're holding, never tools) and runs, glowing.
- * Magnetic  clicks, draws sparks to everyone it can see, then reels them in. Break line of sight.
- * Volatile  hisses for two seconds after it dies, then blows: capped damage, no block damage. Step back.
- * Warded    shrugs off the player it's chasing, but only while a second player is close by.
+ * Thieving  grabs a hotbar stack - your sword included - and runs, glowing and shedding crumbs of it.
+ * Magnetic  clicks, draws sparks to everyone it can see, then yanks them in. Break line of sight.
+ * Volatile  hisses after it dies, then blows: capped damage, no block damage. Step back.
+ * Warded    shrugs off the player it's chasing (and it stings), while a second player is close by.
  */
 public final class EliteAbilities {
     public static final String TAG_STOLEN = "fo_stolen";
@@ -107,19 +108,27 @@ public final class EliteAbilities {
         if (event.getEntity() instanceof Mob mob && Elites.has(mob, EliteModifier.WARDED)
                 && source.getEntity() != null && source.getEntity() == mob.getTarget()
                 && mob.level() instanceof ServerLevel level && wardActive(mob)) {
-            event.setAmount(event.getAmount() * (float) Configs.mechanics().warded().targetDamageMultiplier());
+            MechanicsConfig.Warded cfg = Configs.mechanics().warded();
+            float before = event.getAmount();
+            float after = before * (float) cfg.targetDamageMultiplier();
+            event.setAmount(after);
             level.sendParticles(ParticleTypes.ENCHANTED_HIT, mob.getX(), mob.getY() + 1, mob.getZ(),
                     10, 0.4, 0.5, 0.4, 0.2);
             Fx.sound(level, mob.position(), Sfx.WARDED_DEFLECT);
             if (source.getEntity() instanceof ServerPlayer attacker) {
                 showTips(attacker, mob);
+                float sting = (before - after) * (float) cfg.reflectFraction();
+                if (sting > 0 && !source.is(DamageTypes.THORNS)) {
+                    attacker.hurt(mob.damageSources().thorns(mob), sting);
+                }
             }
         }
 
         if (!(event.getEntity() instanceof ServerPlayer victim) || !(victim.level() instanceof ServerLevel level)) {
             return;
         }
-        if (!(source.getEntity() instanceof Mob attacker) || !Elites.isElite(attacker) || !affectable(victim)) {
+        if (!(source.getEntity() instanceof Mob attacker) || !Elites.isElite(attacker) || !affectable(victim)
+                || source.is(DamageTypes.THORNS)) {
             return;
         }
         showTips(victim, attacker);
@@ -214,11 +223,12 @@ public final class EliteAbilities {
         }
     }
 
-    /** Up ~8 blocks. Needs clear sky; otherwise falls back to scatter. */
+    /** Straight up, as high as tossHeight if there's room. Needs headroom; otherwise falls back to scatter. */
     private static boolean toss(ServerPlayer player, ServerLevel level) {
         BlockPos feet = player.blockPosition();
+        int height = Configs.mechanics().warper().tossHeight();
         int clear = 0;
-        while (clear < 8 && level.getBlockState(feet.above(clear + 2))
+        while (clear < height && level.getBlockState(feet.above(clear + 2))
                 .getCollisionShape(level, feet.above(clear + 2)).isEmpty()) {
             clear++;
         }
@@ -260,7 +270,7 @@ public final class EliteAbilities {
     }
 
     private static void scatter(ServerPlayer player, ServerLevel level) {
-        BlockPos pos = SpawnUtil.findGroundNear(level, player.blockPosition(), 8, 14);
+        BlockPos pos = SpawnUtil.findGroundNear(level, player.blockPosition(), 10, 20);
         if (pos == null) {
             return;
         }
@@ -294,7 +304,7 @@ public final class EliteAbilities {
         if (data.getBoolean(TAG_STOLE_ONCE) || level.random.nextDouble() >= Configs.mechanics().thief().procChance()) {
             return;
         }
-        int slot = stealableSlot(victim, level.random);
+        int slot = stealableSlot(victim, level.random, Configs.mechanics().thief());
         if (slot < 0) {
             return;
         }
@@ -307,7 +317,7 @@ public final class EliteAbilities {
         data.putBoolean(TAG_STOLE_ONCE, true);
         thief.setPersistenceRequired(); // it can't despawn with your stuff
         int flee = Configs.mechanics().thief().fleeTicks();
-        thief.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, flee, 1, false, false));
+        thief.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, flee, 2, false, false));
         thief.addEffect(new MobEffectInstance(MobEffects.GLOWING, -1, 0, false, false));
         thief.setTarget(null);
         attachFleeGoal(thief);
@@ -318,17 +328,21 @@ public final class EliteAbilities {
     }
 
     /**
-     * A random hotbar slot holding something stackable that isn't in your
-     * hand. Tools, weapons, armour, totems and shulker boxes don't stack, so
-     * they are never taken. -1 when there's nothing fair to take.
+     * A random non-empty hotbar slot. By default anything goes - the sword in
+     * your hand included. With takeHeldItem / takeTools off, it skips the
+     * selected slot and anything that doesn't stack (tools, weapons, totems).
+     * -1 when there's nothing it may take.
      */
-    public static int stealableSlot(ServerPlayer player, RandomSource random) {
+    public static int stealableSlot(ServerPlayer player, RandomSource random, MechanicsConfig.Thief cfg) {
         List<Integer> slots = new ArrayList<>();
         for (int i = 0; i < 9; i++) {
             ItemStack stack = player.getInventory().getItem(i);
-            if (i != player.getInventory().selected && !stack.isEmpty() && stack.isStackable()) {
-                slots.add(i);
+            if (stack.isEmpty()
+                    || (!cfg.takeHeldItem() && i == player.getInventory().selected)
+                    || (!cfg.takeTools() && !stack.isStackable())) {
+                continue;
             }
+            slots.add(i);
         }
         return slots.isEmpty() ? -1 : slots.get(random.nextInt(slots.size()));
     }
@@ -439,7 +453,7 @@ public final class EliteAbilities {
         }
     }
 
-    /** Hisses and smokes for the fuse, then blows. Damage is capped; no blocks break. */
+    /** Hisses and smokes for the fuse, then blows. Damage is capped below a one-shot; no blocks break. */
     public static void detonate(ServerLevel level, Vec3 pos) {
         MechanicsConfig.Volatile cfg = Configs.mechanics().volatileAbility();
         Fx.sound(level, pos, Sfx.VOLATILE_FUSE);

@@ -15,9 +15,10 @@ difficulty dial, and it makes the *group* the unit of survival.
 3. **Readable and counterable.** Every ability shows itself before it acts
    (particles plus a recognisable vanilla sound), and each has a counter:
    a shield, cover, distance, a friend.
-4. **Challenging, never a chore.** Apply the "after the tenth time" test.
-   Setbacks are short and recoverable. Rare things stay rare. Nothing wrecks
-   a base, nothing takes your tools, and nothing traps you.
+4. **Brutal, never a chore.** It should mess you up in ways that are funny
+   the first time and still fine the tenth. Setbacks hurt but are
+   recoverable. Rare things stay rare. Nothing wrecks a base, nothing deletes
+   your stuff, and nothing traps you.
 5. **Quiet presentation.** Sound, particles and mob behaviour first, text
    last. There are no titles, broadcasts, lore or invented names. The only
    chat lines are one-time tips.
@@ -28,10 +29,10 @@ difficulty dial, and it makes the *group* the unit of survival.
 |---|---|---|
 | **Danger levels** | Distance from spawn sets the level; the safe area is safe | "Do we push past level 3 tonight?" |
 | **Night** | Every level's edge pulls in by a fifth after dark | "It's getting dark, head back before it gets worse" |
-| **Digging** | Monsters dig natural terrain to reach you (never near a base) | Hearing cracking through the wall of your hidey-hole |
+| **Digging** | Monsters dig through hideouts to reach you (never into a base) | Hearing cracking through the wall of your hidey-hole |
 | **Noise** | Explosions and fights bring idle monsters over to look | Blasting a cave open is a decision, not a free action |
 | **Warping** | A charged hit teleports you: up, aside, or into a friend's place | Your friend is suddenly in your fight |
-| **Thieving** | Takes one stackable hotbar item and runs | A three-person chase through a cave |
+| **Thieving** | Takes a hotbar stack, sword included, and runs | A three-person chase through a cave |
 | **Magnetic** | Telegraphed pull of everyone it can see | The group gets clumped… next to the Volatile |
 | **Volatile** | Explodes two seconds after death | "Back off!" |
 | **Warded** | Shrugs off its target while a second player is near | "I can't hurt it, you hit it" |
@@ -55,18 +56,30 @@ difficulty dial, and it makes the *group* the unit of survival.
 - If you die, a friend can kill your keeper and hold your things for you, or not.
 
 ## Guard rails
-- **Safe area**: no natural monsters and no digging. A mark still runs out
-  there but pays nothing, so going home is always an option.
-- **Digging** only takes blocks in `furtherout:diggable` (natural terrain).
-  It never touches block entities and never digs within 8 blocks of one (a
-  bed, chest, furnace or machine), and each mob has a 12-block budget.
-- **Warping** recharges for 12 seconds, and a shield stops it. It never
-  affects creative, spectator or downed players. Tosses need open sky.
-  Nether rifts only happen at level 4 and pull you back after 20 seconds.
-  Thieving and Warping never roll together.
-- **Thieving** never takes the held item or anything unstackable. The thief
-  can't despawn while carrying, and the loot is indestructible when it drops.
-- **Volatile** damage is capped at 8 (before armour) and breaks no blocks.
+Brutal is the point: being flung into the sky, robbed of your sword, yanked
+off a ledge or swapped into a friend's fight is the fun. What this mod
+never does is waste your evening: nothing destroys a base, nothing deletes
+your stuff, every threat shows itself first, and every setback can be
+climbed out of.
+
+- **Safe area**: no natural monsters and no digging. A mark's timer stops
+  there; it doesn't go away, but you can pass it on.
+- **Digging** takes anything up to deepslate hardness, but never block
+  entities, never within 6 blocks of one (a bed, chest, furnace or machine),
+  never the blacklist (obsidian etc.), and each mob has a 32-block budget.
+  `naturalBlocksOnly` turns it into terrain-only digging.
+- **Warping** always swirls when charged, and a shield always stops it. It
+  never affects creative, spectator or downed players. Tosses need headroom.
+  Nether rifts happen at levels 3 and 4 and always pull you back after 30
+  seconds. Thieving and Warping never roll together.
+- **Thieving** can take anything in the hotbar, but the thief can't despawn
+  while carrying, glows and leaves a trail, and the loot is indestructible
+  when it drops.
+- **Volatile** damage is capped at 12 (before armour), under a one-shot even
+  on Hard, and breaks no blocks.
+- **Warded** only works while a second player is near; solo players fight a
+  normal mob.
+- **Magnetic** needs line of sight, so cover always works.
 - **Downed** never intercepts void deaths, `/kill`, or anyone alone.
   Logging out while down counts as giving up.
 - **Noise** only moves monsters that have nothing better to do. A player's
@@ -74,10 +87,10 @@ difficulty dial, and it makes the *group* the unit of survival.
 - **Sounds in the dark** need real darkness, nobody within 48 blocks and
   distance from spawn, and come 8 to 20 minutes apart. Nothing is ever
   spawned with them.
-- **Bait** only replaces a cave spawn (no sky) at level 2 or deeper, with a
-  player within 32 blocks, at 0.4%. It always gives the bait back: the
-  monster drops it. Creepers are never used, because they would blow up
-  the bait.
+- **Bait** only replaces a cave spawn (solid ground overhead) at level 2 or
+  deeper, with a player within 32 blocks, at 0.4%. It always gives the bait
+  back: the monster drops it. Creepers are never used, because they would
+  blow up the bait.
 - **Keepers** are weak (10 health, 1 damage) so you can win bare-handed,
   never despawn, burn or drown, and stay within a few blocks of where you
   died. They only take what's left after other mods (grave mods) have had

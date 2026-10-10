@@ -11,13 +11,13 @@ public enum EliteModifier {
     WARPER("Warping",
             "Warping mobs shimmer purple when charged, and a charged hit teleports you. Block it with a shield or back off."),
     THIEF("Thieving",
-            "Thieving mobs grab something from your hotbar (never tools or weapons) and run. Kill it to get it back."),
+            "Thieving mobs grab something from your hotbar - even what's in your hand - and run. Kill it to get it back."),
     MAGNETIC("Magnetic",
             "Magnetic mobs crackle, then pull in everyone who can see them. Duck behind a block when you hear the click."),
     VOLATILE("Volatile",
             "Volatile mobs explode a couple of seconds after they die. Step back when you hear the hiss."),
     WARDED("Warded",
-            "Warded mobs shrug off hits from the player they're chasing, but only when friends are nearby to help.");
+            "Warded mobs shrug off hits from the player they're chasing, and it stings. Get a friend to hit it.");
 
     private final String adjective;
     private final String tip;
