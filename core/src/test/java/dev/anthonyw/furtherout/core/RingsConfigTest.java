@@ -155,6 +155,17 @@ class RingsConfigTest {
     }
 
     @Test
+    void nightMultiplierIsBounded() {
+        RingsConfig.Result r = parse("""
+                { "night": { "radiusMultiplier": 0.1 }, "rings": [ { "id": "a", "outerRadius": -1 } ] }""");
+        assertTrue(hasError(r, "radiusMultiplier"));
+        assertEquals(0.8, r.config().nightRadiusMultiplier(), 1e-9);
+        assertEquals(1.0, parse("""
+                { "night": { "radiusMultiplier": 1.0 }, "rings": [ { "id": "a", "outerRadius": -1 } ] }""")
+                .config().nightRadiusMultiplier(), 1e-9, "1.0 turns it off");
+    }
+
+    @Test
     void invalidJsonIsAnErrorNotACrash() {
         RingsConfig.Result r = parse("{ nope");
         assertFalse(r.ok());

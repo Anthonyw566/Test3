@@ -1,5 +1,6 @@
 package dev.anthonyw.furtherout.ring;
 
+import dev.anthonyw.furtherout.core.RingLookup;
 import dev.anthonyw.furtherout.core.RingsConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -84,17 +85,34 @@ public final class RingManager {
 
     @Nullable
     public Ring ringAt(ServerLevel level, double x, double z) {
+        return ringAt(level, x, z, scale(level));
+    }
+
+    @Nullable
+    private Ring ringAt(ServerLevel level, double x, double z, double scale) {
         ResourceLocation dim = level.dimension().location();
         if (radial.contains(dim)) {
             double d = distanceFromOrigin(level, x, z);
             for (Ring ring : rings) {
-                if (ring.unbounded() || d <= ring.outerRadius()) {
+                if (ring.unbounded() || d <= RingLookup.outer(ring.def(), scale)) {
                     return ring;
                 }
             }
             return rings.isEmpty() ? null : rings.get(rings.size() - 1);
         }
         return pinned.get(dim);
+    }
+
+    /** At night, danger reaches closer to spawn: every ring but the safe zone pulls in. */
+    public double scale(ServerLevel level) {
+        return level.isNight() ? config.nightRadiusMultiplier() : 1.0;
+    }
+
+    /** True when it's night and that is the only reason this spot is at a higher level. */
+    public boolean raisedByNight(ServerLevel level, double x, double z) {
+        double scale = scale(level);
+        return scale < 1.0 && radial.contains(level.dimension().location())
+                && ringAt(level, x, z, scale) != ringAt(level, x, z, 1.0);
     }
 
     public boolean isRadial(ServerLevel level) {
@@ -134,7 +152,7 @@ public final class RingManager {
         if (ring == null || ring.unbounded()) {
             return -1;
         }
-        return ring.outerRadius() - distanceFromOrigin(level, x, z);
+        return RingLookup.outer(ring.def(), scale(level)) - distanceFromOrigin(level, x, z);
     }
 
     public List<Ring> rings() {

@@ -40,6 +40,11 @@ shows above your hotbar ("Danger level 2") with a soft sound.
 | **3** | 2,800–5,600 | Tougher again, champions more common. |
 | **4** | 5,600+ | The toughest. Warps can pull you into the Nether for a moment. |
 
+**At night, danger reaches closer to spawn**: every level's edge pulls about
+a fifth of the way in (the safe area stays put), so a spot that's level 1 by
+day can be level 2 after dark. When dusk changes the level where you stand,
+the line above your hotbar says "· night".
+
 The Nether counts as level 3 and the End as level 4. Other dimensions
 (mining dimensions etc.) are left alone. Spawner farms are never touched.
 
@@ -139,6 +144,7 @@ the server. A bad value falls back to its default.
 | Volatile hits too hard | `volatile.maxDamage` |
 | You'd rather have vanilla item drops on death | `"keeper": { "enabled": false }` |
 | You don't want the sound pack offered | `mechanics.json`: `"resourcePack": { "enabled": false }` |
+| Nights are too much (or not enough) | `rings.json`: `"night": { "radiusMultiplier": 0.8 }` (1.0 turns it off) |
 | An ATM10 dimension should be dangerous | `rings.json`: `dimensionRings`, e.g. `"allthemodium:the_other": "level3"` |
 
 ## Development

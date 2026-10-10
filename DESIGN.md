@@ -27,6 +27,7 @@ difficulty dial, and it makes the *group* the unit of survival.
 | System | Rule | The moment it creates |
 |---|---|---|
 | **Danger levels** | Distance from spawn sets the level; the safe area is safe | "Do we push past level 3 tonight?" |
+| **Night** | Every level's edge pulls in by a fifth after dark | "It's getting dark, head back before it gets worse" |
 | **Digging** | Monsters dig natural terrain to reach you (never near a base) | Hearing cracking through the wall of your hidey-hole |
 | **Warping** | A charged hit teleports you: up, aside, or into a friend's place | Your friend is suddenly in your fight |
 | **Thieving** | Takes one stackable hotbar item and runs | A three-person chase through a cave |

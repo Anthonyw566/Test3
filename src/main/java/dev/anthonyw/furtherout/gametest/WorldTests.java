@@ -18,6 +18,7 @@ import net.minecraft.network.protocol.common.ClientboundResourcePackPushPacket;
 import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
@@ -70,6 +71,37 @@ public final class WorldTests {
         check(actionBar(drain(a)).isEmpty(), "nothing more while you stay put");
         BoundaryWatcher.forget(a.getUUID());
         done(h);
+    }
+
+    // ================================================================ Night
+
+    @GameTest(template = ARENA, batch = "night", timeoutTicks = 60)
+    public static void nightPullsDangerCloserButNotIntoTheSafeArea(GameTestHelper h) {
+        reset(h, "level1", "{}");
+        TestKit.placeAt(h, 1100); // level 1 by day, inside level 2's reach at night
+        ServerLevel level = h.getLevel();
+        long before = level.getDayTime();
+        BlockPos at = h.absolutePos(new BlockPos(8, 2, 8));
+        level.setDayTime(6000);
+        h.runAfterDelay(2, () -> {
+            RingManager mgr = RingManager.get();
+            check(mgr.ringAt(level, at.getX() + 0.5, at.getZ() + 0.5).danger() == 1, "noon: level 1");
+            check(!mgr.raisedByNight(level, at.getX() + 0.5, at.getZ() + 0.5), "nothing raised by day");
+            level.setDayTime(18000);
+            h.runAfterDelay(2, () -> {
+                try {
+                    check(level.isNight(), "test setup: it should be night");
+                    check(mgr.ringAt(level, at.getX() + 0.5, at.getZ() + 0.5).danger() == 2, "midnight: level 2");
+                    check(mgr.raisedByNight(level, at.getX() + 0.5, at.getZ() + 0.5), "and the night is why");
+                    TestKit.placeAt(h, 390);
+                    check(RingManager.get().ringAt(level, at.getX() + 0.5, at.getZ() + 0.5).safeZone(),
+                            "the safe area never shrinks");
+                } finally {
+                    level.setDayTime(before);
+                }
+                done(h);
+            });
+        });
     }
 
     // ================================================================ Digging

@@ -21,6 +21,8 @@ import java.util.Set;
  *
  * @param radialDimensions dimensions where difficulty grows with distance from the origin
  * @param dimensionRings   other dimensions pinned to a fixed ring (e.g. the Nether = level3)
+ * @param nightRadiusMultiplier at night, every ring outside the safe zone shrinks to this
+ *                         fraction of its radius, so danger reaches closer to spawn
  */
 public record RingsConfig(
         boolean useWorldSpawn,
@@ -33,7 +35,8 @@ public record RingsConfig(
         double maxDamageMult,
         Set<String> excludedSpawnTypes,
         List<String> entityBlacklist,
-        boolean skipBosses
+        boolean skipBosses,
+        double nightRadiusMultiplier
 ) {
     /** Minecraft 1.21.1 MobSpawnType names. */
     public static final Set<String> SPAWN_TYPES = Set.of(
@@ -133,9 +136,12 @@ public record RingsConfig(
         List<String> blacklist = Json.ids(ex, "entityBlacklist", List.of(), "exclusions", errors);
         boolean skipBosses = Json.bool(ex, "skipBosses", true, "exclusions", errors);
 
+        JsonObject night = Json.obj(root, "night");
+        double nightMult = Json.num(night, "radiusMultiplier", 0.8, 0.5, 1.0, "night", errors);
+
         RingsConfig config = new RingsConfig(useWorldSpawn, originX, originZ, radial,
                 Map.copyOf(dimensionRings), List.copyOf(rings), maxHealth, maxDamage,
-                Set.copyOf(excluded), blacklist, skipBosses);
+                Set.copyOf(excluded), blacklist, skipBosses, nightMult);
         return new Result(config, errors);
     }
 
@@ -245,6 +251,7 @@ public record RingsConfig(
                               "loot": "minecraft:chests/ancient_city" }
                 }
               ],
+              "night": { "radiusMultiplier": 0.8 },
               "scalingCaps": { "maxHealthMult": 2.0, "maxDamageMult": 2.0 },
               "exclusions": {
                 "spawnTypes": ["SPAWNER", "TRIAL_SPAWNER", "MOB_SUMMONED", "CONVERSION", "BREEDING",

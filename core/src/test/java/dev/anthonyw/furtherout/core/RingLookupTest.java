@@ -49,4 +49,16 @@ class RingLookupTest {
         assertEquals(3, RingLookup.byId(RINGS, "level3").danger());
         assertNull(RingLookup.byId(RINGS, "atlantis"));
     }
+
+    @Test
+    void nightPullsDangerCloserButNeverShrinksTheSafeArea() {
+        double night = RingsConfig.parse(RingsConfig.DEFAULT_JSON).config().nightRadiusMultiplier();
+        assertEquals(0.8, night, 1e-9);
+        assertEquals("level1", RingLookup.at(RINGS, 1100).id());
+        assertEquals("level2", RingLookup.at(RINGS, 1100, night).id(), "1,100 blocks out is level 2 at night");
+        assertEquals("safe", RingLookup.at(RINGS, 399, night).id(), "the safe area never shrinks");
+        assertEquals("level1", RingLookup.at(RINGS, 401, night).id());
+        assertEquals("level4", RingLookup.at(RINGS, 4500, night).id());
+        assertEquals(960 - 900, RingLookup.blocksToNext(RINGS, 900, night), 1e-9);
+    }
 }

@@ -89,6 +89,9 @@ public final class RingsCommand {
         if (mgr.isRadial(level)) {
             int distance = (int) mgr.distanceFromOrigin(level, player.getX(), player.getZ());
             line.append(Component.literal(" · " + distance + " blocks from spawn").withStyle(ChatFormatting.GRAY));
+            if (mgr.raisedByNight(level, player.getX(), player.getZ())) {
+                line.append(Component.literal(" · night").withStyle(ChatFormatting.DARK_GRAY));
+            }
         } else {
             line.append(Component.literal(" everywhere in this dimension").withStyle(ChatFormatting.GRAY));
         }
@@ -115,6 +118,7 @@ public final class RingsCommand {
             {"Elites", "an ability in front of the name: Warping, Thieving, Magnetic, Volatile or Warded. Champions have two."},
             {"Downed", "die with a friend nearby and you go down instead. They crouch next to you to help you up."},
             {"Marked", "killing an elite can mark you. Monsters hunt you and drops double. Hit a player to pass it on."},
+            {"Night", "danger reaches about a fifth closer to spawn. The safe area stays the same."},
             {"Dying", "away from spawn, a weak zombie wearing your head keeps your things where you died."},
             {"/rings", "shows your danger level."},
     };

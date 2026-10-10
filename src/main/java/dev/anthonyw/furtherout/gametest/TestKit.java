@@ -76,9 +76,20 @@ final class TestKit {
         BlockPos center = h.absolutePos(new BlockPos(8, 2, 8));
         double originX = center.getX() - (inner + outer) / 2;
         List<RingDef> rings = base.rings().stream().map(r -> r.id().equals(ringId) ? tweak.apply(r) : r).toList();
-        RingManager.setForTesting(new RingsConfig(false, originX, center.getZ(), base.radialDimensions(),
-                base.dimensionRings(), rings, base.maxHealthMult(), base.maxDamageMult(),
-                base.excludedSpawnTypes(), base.entityBlacklist(), base.skipBosses()));
+        placeAt(h, center.getX() - originX, rings);
+    }
+
+    /** Puts the arena's centre exactly {@code distance} blocks from the ring origin. */
+    static void placeAt(GameTestHelper h, double distance) {
+        placeAt(h, distance, RingsConfig.parse(RingsConfig.DEFAULT_JSON).config().rings());
+    }
+
+    private static void placeAt(GameTestHelper h, double distance, List<RingDef> rings) {
+        RingsConfig base = RingsConfig.parse(RingsConfig.DEFAULT_JSON).config();
+        BlockPos center = h.absolutePos(new BlockPos(8, 2, 8));
+        RingManager.setForTesting(new RingsConfig(false, center.getX() + 0.5 - distance, center.getZ() + 0.5,
+                base.radialDimensions(), base.dimensionRings(), rings, base.maxHealthMult(), base.maxDamageMult(),
+                base.excludedSpawnTypes(), base.entityBlacklist(), base.skipBosses(), base.nightRadiusMultiplier()));
     }
 
     /** A real ServerPlayer in survival, without spawn protection, standing at a spot in the arena. */

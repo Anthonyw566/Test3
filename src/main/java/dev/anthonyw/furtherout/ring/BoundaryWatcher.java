@@ -3,6 +3,8 @@ package dev.anthonyw.furtherout.ring;
 import dev.anthonyw.furtherout.fx.Fx;
 import dev.anthonyw.furtherout.fx.Sfx;
 import dev.anthonyw.furtherout.util.Tips;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.util.HashMap;
@@ -12,7 +14,8 @@ import java.util.UUID;
 /**
  * Lets a player know, quietly, when the danger level around them changes:
  * one line above the hotbar and a soft sound (lower going out, brighter
- * coming home). The sound is rate-limited so walking along a boundary stays
+ * coming home). Nightfall can raise the level where you stand; the line then
+ * says so. The sound is rate-limited so walking along a boundary stays
  * quiet. Called once per second per player from the server ticker.
  */
 public final class BoundaryWatcher {
@@ -36,7 +39,11 @@ public final class BoundaryWatcher {
         if (previous == null || previous == danger) {
             return;
         }
-        player.displayClientMessage(ring.label(), true);
+        RingManager mgr = RingManager.get();
+        boolean night = mgr != null && mgr.raisedByNight(player.serverLevel(), player.getX(), player.getZ());
+        player.displayClientMessage(night
+                ? ring.label().copy().append(Component.literal(" · night").withStyle(ChatFormatting.DARK_GRAY))
+                : ring.label(), true);
         long now = player.serverLevel().getGameTime();
         if (now - lastSound.getOrDefault(id, Long.MIN_VALUE / 2) >= SOUND_COOLDOWN_TICKS) {
             lastSound.put(id, now);
@@ -45,6 +52,9 @@ public final class BoundaryWatcher {
         if (previous < 0) {
             Tips.once(player, "leaving_safe_area",
                     "Monsters get tougher the further you go from spawn. /rings shows where you stand.");
+        }
+        if (night && danger > previous) {
+            Tips.once(player, "night", "At night, danger reaches closer to spawn. It eases off again at dawn.");
         }
     }
 
