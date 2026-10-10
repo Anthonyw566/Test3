@@ -65,20 +65,6 @@ usually hear a groan or two first. A fight only makes noise every few
 seconds, so a long fight doesn't keep pulling more in. The safe area stays
 quiet.
 
-### Bait
-Very rarely, deep in a dark cave (level 2 and beyond), something worth
-picking up is lying on the floor: a diamond, a few gold ingots, an ender
-pearl. It can't be picked up, and every couple of seconds it twitches.
-Reach for it and it snaps into a monster holding the bait, which it drops
-when it dies. So you do get the diamond in the end.
-
-### Alone in the dark
-If you're on your own in real darkness, away from spawn and with nobody
-within about 50 blocks, you'll occasionally hear something behind you that
-nobody else hears: footsteps, someone mining, a door, a chest closing. It's
-always a vanilla sound and it's minutes apart. Nothing ever comes of it.
-Probably.
-
 ### Elites
 A few monsters spawn as elites, with an ability in front of their name, like
 *Warping Husk*. Look at one to read it. Champions have two abilities. Each
@@ -126,6 +112,19 @@ doesn't burn in daylight, and stays near where you died. Kill it and
 everything spills out, and those items can't burn or despawn. Anyone can
 kill it, friend or not. After you respawn, one line tells you where it is.
 In the safe area, things drop the vanilla way.
+
+### Bait
+Very rarely, deep in a dark cave (level 2 and beyond), something worth
+picking up is lying on the floor: a diamond, a few gold ingots, an ender
+pearl. It can't be picked up, and every couple of seconds it twitches.
+Reach for it and it snaps into a monster holding the bait, which it drops
+when it dies. So you do get the diamond in the end.
+
+### Alone in the dark
+If you're on your own in real darkness, away from spawn and with nobody
+within about 50 blocks, you'll occasionally hear something behind you that
+nobody else hears: footsteps, someone mining, a door, a chest closing. It's
+always a vanilla sound and it's minutes apart. Nothing ever comes of it.
 
 ## Commands
 
@@ -184,12 +183,15 @@ the server. A bad value falls back to its default.
 ```
 
 - `core/` holds the rules without Minecraft: config parsing and validation,
-  danger level lookup, Downed timers, Marked rules, dig rules, ability rolls,
-  magnet math. All of it is covered by JUnit tests.
+  danger level lookup (night included), Downed timers, Marked rules, dig
+  rules, ability rolls, magnet math, keeper, noise, bait, dark-sound and
+  pearl rules. All of it is covered by JUnit tests.
 - `src/main/java/.../gametest/` holds the in-game tests. They spawn real mobs
   and mock survival players and check things like: a downed player gets
   helped up, a shield stops a warp, a wall stops a magnet, a digger leaves
-  planks and chests alone, and the volatile blast never one-shots.
+  planks and chests alone, the volatile blast never one-shots, your keeper
+  zombie gives everything back, midnight raises the level, an explosion
+  brings a husk over, and bait turns into a husk that drops the diamond.
 - CI (`.github/workflows/build.yml`) runs everything on every push and
   publishes the jar and the sound pack as the `latest` pre-release.
 - `tools/` regenerates the pack's sounds and icon from code (see

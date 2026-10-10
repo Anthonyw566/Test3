@@ -8,6 +8,7 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import dev.anthonyw.furtherout.config.Configs;
 import dev.anthonyw.furtherout.core.EliteModifier;
 import dev.anthonyw.furtherout.core.MarkRules;
+import dev.anthonyw.furtherout.core.RingLookup;
 import dev.anthonyw.furtherout.core.ModifierPicker;
 import dev.anthonyw.furtherout.mob.DigGoal;
 import dev.anthonyw.furtherout.mob.Elites;
@@ -114,16 +115,16 @@ public final class RingsCommand {
     static final String[][] HELP = {
             {"Further Out", "monsters get tougher the further you go from spawn."},
             {"Safe area", "near spawn, no monsters spawn and nothing digs."},
+            {"Night", "danger reaches about a fifth closer to spawn. The safe area stays the same."},
             {"Digging", "further out, some monsters dig through stone and dirt to reach you, never near beds, chests or machines."},
+            {"Noise", "explosions and fights bring idle monsters nearby over to look."},
             {"Elites", "an ability in front of the name: Warping, Thieving, Magnetic, Volatile or Warded. Champions have two."},
             {"Warped Ender Pearl", "a rare drop from Warping champions. Swaps you with whatever lands closest."},
             {"Downed", "die with a friend nearby and you go down instead. They crouch next to you to help you up."},
             {"Marked", "killing an elite can mark you. Monsters hunt you and drops double. Hit a player to pass it on."},
-            {"Noise", "explosions and fights bring idle monsters nearby over to look."},
-            {"Bait", "deep in a dark cave, a diamond on the floor might not be a diamond. Watch for a twitch."},
-            {"Alone", "in the dark, far from anyone, you might hear things. Probably nothing."},
-            {"Night", "danger reaches about a fifth closer to spawn. The safe area stays the same."},
             {"Dying", "away from spawn, a weak zombie wearing your head keeps your things where you died."},
+            {"Bait", "rarely, an item on a dark cave floor twitches. Reach for it and it becomes a monster that drops it."},
+            {"Alone", "on your own in the dark, you may hear sounds nobody else hears. They're harmless."},
             {"/rings", "shows your danger level."},
     };
 
@@ -240,8 +241,9 @@ public final class RingsCommand {
         double distance = mgr.distanceFromOrigin(level, player.getX(), player.getZ());
         double edge = -1;
         for (Ring ring : mgr.rings()) {
-            if (!ring.unbounded() && (edge < 0 || Math.abs(ring.outerRadius() - distance) < Math.abs(edge - distance))) {
-                edge = ring.outerRadius();
+            double radius = RingLookup.outer(ring.def(), mgr.scale(level)); // tonight's edge, if it's night
+            if (!ring.unbounded() && (edge < 0 || Math.abs(radius - distance) < Math.abs(edge - distance))) {
+                edge = radius;
             }
         }
         if (edge <= 0) {

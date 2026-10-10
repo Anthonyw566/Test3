@@ -30,17 +30,17 @@ difficulty dial, and it makes the *group* the unit of survival.
 | **Night** | Every level's edge pulls in by a fifth after dark | "It's getting dark, head back before it gets worse" |
 | **Digging** | Monsters dig natural terrain to reach you (never near a base) | Hearing cracking through the wall of your hidey-hole |
 | **Noise** | Explosions and fights bring idle monsters over to look | Blasting a cave open is a decision, not a free action |
-| **Warped Ender Pearl** | Rare champion drop: swap with whatever is closest to where it lands | "Get me out of here" / "Why am I next to a creeper" |
-| **Bait** | A rare diamond on a cave floor that twitches, then becomes a monster | "Don't touch it, it moved" |
-| **Alone in the dark** | Rare sounds behind a lone player, which only they hear | "Did you hear that?" "Hear what?" |
 | **Warping** | A charged hit teleports you: up, aside, or into a friend's place | Your friend is suddenly in your fight |
 | **Thieving** | Takes one stackable hotbar item and runs | A three-person chase through a cave |
 | **Magnetic** | Telegraphed pull of everyone it can see | The group gets clumped… next to the Volatile |
 | **Volatile** | Explodes two seconds after death | "Back off!" |
 | **Warded** | Shrugs off its target while a second player is near | "I can't hurt it, you hit it" |
+| **Warped Ender Pearl** | Rare champion drop: swap with whatever is closest to where it lands | "Get me out of here" / "Why am I next to a creeper" |
 | **Downed** | Die near a friend: crawl, bleed out, get helped up | Rescues through a crowd of monsters |
 | **Marked** | Elite kills can mark you; hit a player to pass it | Greed versus safety, hot potato |
 | **Keeper** | Die away from spawn: a weak zombie in your head keeps your things | "That's me over there. Hit it." |
+| **Bait** | A rare diamond on a cave floor that twitches, then becomes a monster | "Don't touch it, it moved" |
+| **Alone in the dark** | Rare sounds behind a lone player, which only they hear | "Did you hear that?" "Hear what?" |
 
 ### How they interact
 - A marked player draws monsters, which pulls them off a downed friend, or onto one.
@@ -49,6 +49,10 @@ difficulty dial, and it makes the *group* the unit of survival.
 - Magnetic clumps the group together, and Volatile punishes clumps.
 - Warded only works in groups, so groups need to coordinate.
 - Digging means the group can't wait out a mark in a sealed hole.
+- A Volatile's blast is noise too, so the fight you just won draws the next one.
+- A Warped Ender Pearl thrown next to a downed friend swaps them out of the crowd, and puts you into it.
+- Being marked at night means more monsters to lure, at a higher level.
+- If you die, a friend can kill your keeper and hold your things for you, or not.
 
 ## Guard rails
 - **Safe area**: no natural monsters and no digging. A mark still runs out
@@ -93,11 +97,14 @@ All of it is in git history.
 
 ## Architecture
 - `core/` is pure Java with no Minecraft. It holds config parsing and
-  validation plus every rule (`DownedState`, `MarkRules`, `DigRules`, warp
-  rolls, magnet math, danger level lookup), and it is unit-tested.
+  validation plus every rule (`DownedState`, `MarkRules`, `DigRules`,
+  `KeeperRules`, `NoiseRules`, `MimicRules`, `DarkSoundRules`,
+  `PearlRules`, warp rolls, magnet math, danger level lookup with night),
+  and it is unit-tested.
 - `src/main/java/.../` is thin NeoForge event glue:
-  - `mob/`: spawning, elites, abilities, the dig goal, rewards
-  - `player/`: Downed, Marked, Nether rifts
+  - `mob/`: spawning, elites, abilities, the dig and investigate goals,
+    noise, bait, the Warped Ender Pearl, rewards
+  - `player/`: Downed, Marked, Nether rifts, keepers, sounds in the dark
   - `ring/`: danger level lookup and the indicator
   - `command/`: `/rings`
   - `fx/`: sounds and the optional pack
