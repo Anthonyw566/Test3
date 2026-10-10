@@ -3,6 +3,7 @@ package dev.anthonyw.furtherout.mob;
 import dev.anthonyw.furtherout.FurtherOut;
 import dev.anthonyw.furtherout.config.Configs;
 import dev.anthonyw.furtherout.core.EliteModifier;
+import dev.anthonyw.furtherout.core.PearlRules;
 import dev.anthonyw.furtherout.ring.Ring;
 import dev.anthonyw.furtherout.ring.RingManager;
 import dev.anthonyw.furtherout.util.Scheduler;
@@ -55,6 +56,10 @@ public final class EliteRewards {
         int rolls = Elites.tier(mob) >= 2 ? Configs.mechanics().elites().championLootRolls() : 1;
         Vec3 pos = mob.position();
         List<ItemStack> loot = rollLoot(level, lootTableFor(mob), pos, rolls);
+        if (PearlRules.drops(Elites.tier(mob) >= 2, Elites.has(mob, EliteModifier.WARPER),
+                level.random.nextDouble(), Configs.mechanics().elites().warpedPearlChance())) {
+            loot.add(WarpedPearls.create(1 + level.random.nextInt(2)));
+        }
         if (Elites.has(mob, EliteModifier.VOLATILE)) {
             // Don't let its own explosion eat the reward: drop it once the dust settles.
             int fuse = Configs.mechanics().volatileAbility().fuseTicks();

@@ -93,7 +93,11 @@ ability shows itself before it acts and has a counter:
 | **Warded** | Barely hurt by the player it's chasing, **but only while a second player is close by**. | Someone else hits it. Solo players fight a normal mob. |
 
 Elites drop extra loot from their danger level's loot table (champions
-roll twice) and bonus XP.
+roll twice) and bonus XP. Warping champions sometimes drop a **Warped Ender
+Pearl**. Throw it and you swap places with whatever living thing is closest
+to where it lands: a friend you want to pull out of trouble, a downed
+friend, or a skeleton. That's the catch. With nothing close, it works like
+a normal pearl.
 
 ### Downed, not dead
 If you'd die while a friend is within 64 blocks, you go **down** instead.

@@ -30,6 +30,7 @@ difficulty dial, and it makes the *group* the unit of survival.
 | **Night** | Every level's edge pulls in by a fifth after dark | "It's getting dark, head back before it gets worse" |
 | **Digging** | Monsters dig natural terrain to reach you (never near a base) | Hearing cracking through the wall of your hidey-hole |
 | **Noise** | Explosions and fights bring idle monsters over to look | Blasting a cave open is a decision, not a free action |
+| **Warped Ender Pearl** | Rare champion drop: swap with whatever is closest to where it lands | "Get me out of here" / "Why am I next to a creeper" |
 | **Bait** | A rare diamond on a cave floor that twitches, then becomes a monster | "Don't touch it, it moved" |
 | **Alone in the dark** | Rare sounds behind a lone player, which only they hear | "Did you hear that?" "Hear what?" |
 | **Warping** | A charged hit teleports you: up, aside, or into a friend's place | Your friend is suddenly in your fight |

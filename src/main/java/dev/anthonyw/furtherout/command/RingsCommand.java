@@ -116,6 +116,7 @@ public final class RingsCommand {
             {"Safe area", "near spawn, no monsters spawn and nothing digs."},
             {"Digging", "further out, some monsters dig through stone and dirt to reach you, never near beds, chests or machines."},
             {"Elites", "an ability in front of the name: Warping, Thieving, Magnetic, Volatile or Warded. Champions have two."},
+            {"Warped Ender Pearl", "a rare drop from Warping champions. Swaps you with whatever lands closest."},
             {"Downed", "die with a friend nearby and you go down instead. They crouch next to you to help you up."},
             {"Marked", "killing an elite can mark you. Monsters hunt you and drops double. Hit a player to pass it on."},
             {"Noise", "explosions and fights bring idle monsters nearby over to look."},

@@ -4,6 +4,7 @@ import dev.anthonyw.furtherout.FurtherOut;
 import dev.anthonyw.furtherout.core.EliteModifier;
 import dev.anthonyw.furtherout.mob.EliteAbilities;
 import dev.anthonyw.furtherout.mob.Elites;
+import dev.anthonyw.furtherout.mob.WarpedPearls;
 import dev.anthonyw.furtherout.player.Rifts;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
@@ -17,6 +18,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.animal.Pig;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.Husk;
+import net.minecraft.world.entity.projectile.ThrownEnderpearl;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
@@ -294,6 +296,45 @@ public final class EliteTests {
         EliteAbilities.magneticPulse(magnet);
         check(a.getDeltaMovement().lengthSqr() < 1.0e-6, "a wall between you and it should save you");
         done(h);
+    }
+
+    // ---------------------------------------------------------------- warped pearl
+
+    @GameTest(template = ARENA, batch = "pearl_swap", timeoutTicks = 100)
+    public static void warpedPearlSwapsYouWithWhateverLandsClosest(GameTestHelper h) {
+        reset(h, "level2", "{}");
+        ServerPlayer a = player(h, "A", new BlockPos(2, 2, 2));
+        Pig pig = h.spawn(EntityType.PIG, new BlockPos(12, 2, 12));
+        pig.setNoAi(true);
+        Vec3 aBefore = a.position();
+        Vec3 pigBefore = pig.position();
+        ThrownEnderpearl pearl = new ThrownEnderpearl(h.getLevel(), a);
+        pearl.setItem(WarpedPearls.create(1));
+        Vec3 above = h.absoluteVec(new Vec3(12.5, 4.5, 11.0));
+        pearl.setPos(above.x, above.y, above.z);
+        pearl.setDeltaMovement(0, -0.8, 0);
+        h.getLevel().addFreshEntity(pearl);
+        h.succeedWhen(() -> {
+            check(a.position().distanceTo(pigBefore) < 1.0, "A should be where the pig was, is at " + a.position());
+            check(pig.position().distanceTo(aBefore) < 1.0, "the pig should be where A was, is at " + pig.position());
+            cleanup(h);
+        });
+    }
+
+    @GameTest(template = ARENA, batch = "pearl_drop", timeoutTicks = 40)
+    public static void warpingChampionsCanDropTheWarpedPearl(GameTestHelper h) {
+        reset(h, "level2", "{ \"elites\": { \"warpedPearlChance\": 1.0 } }");
+        ServerPlayer a = player(h, "A", new BlockPos(4, 2, 4));
+        Husk champion = elite(h, new BlockPos(8, 2, 8), EliteModifier.WARPER, EliteModifier.WARDED);
+        Vec3 where = champion.position();
+        champion.hurt(h.getLevel().damageSources().playerAttack(a), 1000f);
+        h.runAfterDelay(2, () -> {
+            List<ItemEntity> pearls = h.getLevel().getEntitiesOfClass(ItemEntity.class, new AABB(where, where).inflate(3),
+                    e -> WarpedPearls.isWarped(e.getItem()));
+            check(!pearls.isEmpty(), "a warping champion should drop the pearl (chance set to 1 for the test)");
+            check(!WarpedPearls.isWarped(new ItemStack(Items.ENDER_PEARL)), "ordinary pearls stay ordinary");
+            done(h);
+        });
     }
 
     // ---------------------------------------------------------------- rewards

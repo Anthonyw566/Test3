@@ -30,7 +30,7 @@ public record MechanicsConfig(
         Pack pack
 ) {
     public record Elites(double eliteHealthBonus, double championHealthBonus,
-                         int championLootRolls, int xpBonus) {
+                         int championLootRolls, int xpBonus, double warpedPearlChance, double pearlSwapRadius) {
     }
 
     /**
@@ -138,7 +138,9 @@ public record MechanicsConfig(
                 Json.num(e, "eliteHealthBonus", 0.3, 0, 10, "elites", errors),
                 Json.num(e, "championHealthBonus", 0.75, 0, 10, "elites", errors),
                 Json.integer(e, "championLootRolls", 2, 0, 10, "elites", errors),
-                Json.integer(e, "xpBonus", 20, 0, 10000, "elites", errors));
+                Json.integer(e, "xpBonus", 20, 0, 10000, "elites", errors),
+                Json.num(e, "warpedPearlChance", 0.35, 0, 1, "elites", errors),
+                Json.num(e, "pearlSwapRadius", 4, 1, 16, "elites", errors));
 
         JsonObject w = Json.obj(root, "warper");
         Warper warper = new Warper(
@@ -328,7 +330,9 @@ public record MechanicsConfig(
                 "eliteHealthBonus": 0.3,
                 "championHealthBonus": 0.75,
                 "championLootRolls": 2,
-                "xpBonus": 20
+                "xpBonus": 20,
+                "warpedPearlChance": 0.35,
+                "pearlSwapRadius": 4
               },
               "warper": {
                 "procChance": 1.0,
