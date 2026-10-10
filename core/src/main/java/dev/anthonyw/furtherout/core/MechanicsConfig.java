@@ -23,6 +23,7 @@ public record MechanicsConfig(
         Digging digging,
         Downed downed,
         Marked marked,
+        Keeper keeper,
         Pack pack
 ) {
     public record Elites(double eliteHealthBonus, double championHealthBonus,
@@ -86,6 +87,11 @@ public record MechanicsConfig(
                          double lureRadius, int ambushEveryTicks, int firstAmbushTicks,
                          int ambushBaseSize, List<String> ambushMobs, int passBackImmunityTicks,
                          double jumpRange, int minJumpTicks, int survivalXp, boolean doubleDrops) {
+    }
+
+    /** The zombie that keeps your things where you died. */
+    public record Keeper(boolean enabled, boolean inSafeArea, double leashRadius, double health,
+                         double attackDamage) {
     }
 
     /**
@@ -200,6 +206,14 @@ public record MechanicsConfig(
                 Json.integer(mk, "survivalXp", 100, 0, 100000, "marked", errors),
                 Json.bool(mk, "doubleDrops", true, "marked", errors));
 
+        JsonObject kp = Json.obj(root, "keeper");
+        Keeper keeper = new Keeper(
+                Json.bool(kp, "enabled", true, "keeper", errors),
+                Json.bool(kp, "inSafeArea", false, "keeper", errors),
+                Json.num(kp, "leashRadius", 8, 2, 64, "keeper", errors),
+                Json.num(kp, "health", 10, 1, 200, "keeper", errors),
+                Json.num(kp, "attackDamage", 1, 0, 20, "keeper", errors));
+
         JsonObject pk = Json.obj(root, "resourcePack");
         String sha1 = Json.str(pk, "sha1", "").trim().toLowerCase(java.util.Locale.ROOT);
         if (!sha1.isEmpty() && !sha1.matches("[0-9a-f]{40}")) {
@@ -221,7 +235,8 @@ public record MechanicsConfig(
                 Json.bool(pk, "required", false, "resourcePack", errors),
                 url, sha1);
 
-        return new MechanicsConfig(elites, warper, thief, magnetic, vol, warded, digging, downed, marked, pack);
+        return new MechanicsConfig(elites, warper, thief, magnetic, vol, warded, digging, downed, marked, keeper,
+                pack);
     }
 
     private static int ticks(double seconds) {
@@ -333,6 +348,13 @@ public record MechanicsConfig(
                 "minJumpSeconds": 45,
                 "survivalXp": 100,
                 "doubleDrops": true
+              },
+              "keeper": {
+                "enabled": true,
+                "inSafeArea": false,
+                "leashRadius": 8,
+                "health": 10,
+                "attackDamage": 1
               },
               "resourcePack": {
                 "enabled": true,

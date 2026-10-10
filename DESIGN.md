@@ -35,6 +35,7 @@ difficulty dial, and it makes the *group* the unit of survival.
 | **Warded** | Shrugs off its target while a second player is near | "I can't hurt it, you hit it" |
 | **Downed** | Die near a friend: crawl, bleed out, get helped up | Rescues through a crowd of monsters |
 | **Marked** | Elite kills can mark you; hit a player to pass it | Greed versus safety, hot potato |
+| **Keeper** | Die away from spawn: a weak zombie in your head keeps your things | "That's me over there. Hit it." |
 
 ### How they interact
 - A marked player draws monsters, which pulls them off a downed friend, or onto one.
@@ -59,6 +60,10 @@ difficulty dial, and it makes the *group* the unit of survival.
 - **Volatile** damage is capped at 8 (before armour) and breaks no blocks.
 - **Downed** never intercepts void deaths, `/kill`, or anyone alone.
   Logging out while down counts as giving up.
+- **Keepers** are weak (10 health, 1 damage) so you can win bare-handed,
+  never despawn, burn or drown, and stay within a few blocks of where you
+  died. They only take what's left after other mods (grave mods) have had
+  their pick, and do nothing with keepInventory or in the void.
 - **Farms**: spawners, spawn eggs, commands, breeding and conversions are
   never scaled, promoted or made to dig.
 

@@ -12,6 +12,7 @@ import dev.anthonyw.furtherout.core.ModifierPicker;
 import dev.anthonyw.furtherout.mob.DigGoal;
 import dev.anthonyw.furtherout.mob.Elites;
 import dev.anthonyw.furtherout.player.DownedManager;
+import dev.anthonyw.furtherout.player.Keepers;
 import dev.anthonyw.furtherout.player.MarkManager;
 import dev.anthonyw.furtherout.ring.Ring;
 import dev.anthonyw.furtherout.ring.RingManager;
@@ -114,6 +115,7 @@ public final class RingsCommand {
             {"Elites", "an ability in front of the name: Warping, Thieving, Magnetic, Volatile or Warded. Champions have two."},
             {"Downed", "die with a friend nearby and you go down instead. They crouch next to you to help you up."},
             {"Marked", "killing an elite can mark you. Monsters hunt you and drops double. Hit a player to pass it on."},
+            {"Dying", "away from spawn, a weak zombie wearing your head keeps your things where you died."},
             {"/rings", "shows your danger level."},
     };
 
@@ -211,7 +213,9 @@ public final class RingsCommand {
                 + "\n  abilities: " + (Elites.modifiers(mob).isEmpty() ? "-" : Elites.modifiers(mob))
                 + "\n  digger: " + (Elites.isDigger(mob) ? "yes (" + mob.getPersistentData().getInt(DigGoal.TAG_DUG)
                 + "/" + Configs.mechanics().digging().maxBlocksPerMob() + " blocks used)" : "no")
-                + "\n  health: " + Math.round(mob.getHealth()) + "/" + Math.round(mob.getMaxHealth());
+                + "\n  health: " + Math.round(mob.getHealth()) + "/" + Math.round(mob.getMaxHealth())
+                + (mob instanceof net.minecraft.world.entity.monster.Zombie z && Keepers.isKeeper(z)
+                ? "\n  keeping " + Keepers.carried(z).size() + " stacks" : "");
         ctx.getSource().sendSuccess(() -> Component.literal(text), false);
         return 1;
     }

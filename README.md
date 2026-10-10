@@ -89,6 +89,14 @@ from spawn, you get some XP and loot. Or **hit another player** to hand it
 over; they can't pass it straight back. Going home always works, but the
 mark pays nothing there. If you die marked, it moves to the nearest player.
 
+### When you die
+Away from spawn, your things don't scatter. A weak zombie **wearing your
+head and your name** holds everything you dropped. It never despawns,
+doesn't burn in daylight, and stays near where you died. Kill it and
+everything spills out, and those items can't burn or despawn. Anyone can
+kill it, friend or not. After you respawn, one line tells you where it is.
+In the safe area, things drop the vanilla way.
+
 ## Commands
 
 | Command | Who | |
@@ -129,6 +137,7 @@ the server. A bad value falls back to its default.
 | Marked is too much | `marked.durationSeconds`, `marked.ambushEverySeconds`, `marked.ambushBaseSize` |
 | Warpers too chaotic | `warper.cooldownSeconds`, or set `swapWeight` to 0 to stop friend swaps |
 | Volatile hits too hard | `volatile.maxDamage` |
+| You'd rather have vanilla item drops on death | `"keeper": { "enabled": false }` |
 | You don't want the sound pack offered | `mechanics.json`: `"resourcePack": { "enabled": false }` |
 | An ATM10 dimension should be dangerous | `rings.json`: `dimensionRings`, e.g. `"allthemodium:the_other": "level3"` |
 

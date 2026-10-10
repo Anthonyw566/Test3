@@ -8,6 +8,7 @@ import dev.anthonyw.furtherout.mob.EliteAbilities;
 import dev.anthonyw.furtherout.mob.EliteRewards;
 import dev.anthonyw.furtherout.mob.MobSpawns;
 import dev.anthonyw.furtherout.player.DownedManager;
+import dev.anthonyw.furtherout.player.Keepers;
 import dev.anthonyw.furtherout.player.MarkManager;
 import dev.anthonyw.furtherout.player.Rifts;
 import dev.anthonyw.furtherout.ring.BoundaryWatcher;
@@ -45,6 +46,7 @@ public final class FurtherOut {
         NeoForge.EVENT_BUS.register(DownedManager.INSTANCE);
         NeoForge.EVENT_BUS.register(MarkManager.INSTANCE);
         NeoForge.EVENT_BUS.register(Rifts.INSTANCE);
+        NeoForge.EVENT_BUS.register(Keepers.INSTANCE);
         NeoForge.EVENT_BUS.register(Tips.INSTANCE);
         NeoForge.EVENT_BUS.register(ResourcePacks.INSTANCE);
     }
