@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Synthesizes every Distant Frontiers sound effect from scratch.
+"""Synthesizes the optional pack's few sounds from scratch.
 
-No samples, no recordings: oscillators, noise, filters, envelopes and a
-convolution reverb. Output is mono 44.1 kHz OGG Vorbis (Minecraft needs mono
-for positional audio) into resourcepack/assets/distantfrontiers/sounds/.
+Most of the mod uses vanilla sounds on purpose. These are the handful that
+vanilla has no good match for, kept soft and short so they sit in the
+background like Minecraft's own: sines and filtered noise only, low peaks,
+small rooms. Output is mono 44.1 kHz OGG Vorbis (Minecraft needs mono for
+positional audio) into resourcepack/assets/furtherout/sounds/.
 
 Usage (needs numpy, scipy, soundfile):
     python3 tools/make_sounds.py [--preview preview.png]
@@ -16,7 +18,7 @@ import soundfile as sf
 from scipy import signal
 
 SR = 44100
-OUT = "resourcepack/assets/distantfrontiers/sounds"
+OUT = "resourcepack/assets/furtherout/sounds"
 
 
 # ----------------------------------------------------------------------------- building blocks
@@ -178,194 +180,83 @@ def bell(freq, dur, partials=((0.5, 0.6, 2.0), (1.0, 1.0, 1.6), (1.19, 0.5, 1.0)
 
 # ----------------------------------------------------------------------------- the sounds
 
-def ring_deeper():
-    """Crossing outward: a low, ominous bell toll over a swelling drone."""
-    d = 3.0
-    toll = bell(note("G2"), d)
-    strike = lowpass(noise(0.05, 1), 1500) * decay(0.05, 0.01) * 0.6
-    drone = (osc(note("G1"), d, "saw") + osc(note("G1") * 1.005, d, "saw")) * 0.15
-    drone = lowpass(drone, 300) * adsr(d, 0.8, 0.5, 0.6, 1.4)
-    x = place(toll + drone, strike, 0)
-    return finish(reverb(x, 1.8, 0.35))
+def soft_tone(freq, dur, attack, release, warmth=0.15):
+    """A rounded sine with a touch of its octave, slow in and out."""
+    tone = osc(freq, dur) + warmth * osc(freq * 2, dur) + warmth * 0.3 * osc(freq * 3, dur)
+    return tone * adsr(dur, attack, 0.1, 0.8, release)
 
 
-def ring_home():
-    """Crossing into the Hearth: a warm, rising chime."""
-    x = np.zeros(1)
-    for i, n in enumerate(["C5", "E5", "G5", "C6"]):
-        x = place(x, pluck(note(n), 1.2, tau=0.45, bright=0.15) * (1 - 0.1 * i), 0.09 * i)
-    return finish(reverb(x, 1.4, 0.3))
+def air(dur, lo, hi, seed, shape):
+    """Filtered breath of noise with an envelope."""
+    return bandpass(noise(dur, seed), lo, hi) * shape
 
 
-def hex_curse():
-    """Becoming hexed: a dissonant swell that slams into a dark hit."""
-    d = 1.3
-    cluster = sum(osc(note(n) * glide(1.0, 1.06, d), d, "saw") for n in ["B2", "F3", "C4", "F#4"]) * 0.18
-    cluster = sweep_lowpass(cluster, 300, 4000) * np.linspace(0, 1, n_samples(d)) ** 2
-    rush = sweep_bandpass(noise(d, 2), 300, 6000, q=2) * np.linspace(0, 1, n_samples(d)) ** 3 * 0.8
-    swell = cluster + rush
-    hit_d = 1.6
-    hit = (osc(glide(90, 40, hit_d), hit_d) * decay(hit_d, 0.35) * 1.2
-           + drive(sum(osc(note(n), hit_d, "saw") for n in ["B1", "F2", "C3"]) * 0.3, 3)
-           * decay(hit_d, 0.5) * 0.6)
-    hit = lowpass(hit, 2500)
-    x = place(swell, hit, d)
-    return finish(reverb(x, 2.0, 0.35))
+def danger_up():
+    """Further from spawn: a low, quiet swell that sinks away. Barely there."""
+    d = 2.2
+    pad = soft_tone(note("D2"), d, 0.6, 1.2) + 0.6 * soft_tone(note("F2"), d, 0.8, 1.2)
+    pad = sweep_lowpass(pad, 900, 250)
+    wind = sweep_bandpass(noise(d, 21), 700, 220, q=1.5) * adsr(d, 0.7, 0.4, 0.5, 1.0) * 0.5
+    return finish(reverb(pad + wind, 1.6, 0.3, damp=1800), peak=0.55)
 
 
-def hex_pass():
-    """Tag, you're it: a slap and a zapping chirp."""
-    slap = bandpass(noise(0.06, 3), 800, 5000) * decay(0.06, 0.012)
-    d = 0.35
-    mod = osc(glide(600, 90, d), d) * 6
-    chirp = np.sin(2 * np.pi * np.cumsum(glide(1600, 180, d) * (1 + 0.02 * mod)) / SR) * decay(d, 0.12)
-    zing = osc(glide(900, 2400, 0.18), 0.18, "tri") * decay(0.18, 0.05) * 0.4
-    x = place(slap * 1.2, chirp, 0.01)
-    x = place(x, zing, 0.12)
-    return finish(reverb(x, 0.6, 0.2))
+def danger_down():
+    """Back toward spawn: two warm, muted notes rising a fifth."""
+    x = soft_tone(note("G3"), 1.6, 0.05, 1.2, warmth=0.1) * decay(1.6, 0.6)
+    x = place(x, soft_tone(note("D4"), 1.6, 0.05, 1.2, warmth=0.1) * decay(1.6, 0.6) * 0.8, 0.22)
+    return finish(reverb(lowpass(x, 1800), 1.4, 0.3, damp=2500), peak=0.5)
 
 
-def hex_ambush():
-    """Something answers the Hex: a far-off war horn, two falling notes."""
-    def horn(freq, dur):
-        vib = 1 + 0.006 * np.sin(2 * np.pi * 5.5 * time(dur))
-        tone = osc(freq * vib, dur, "saw") + 0.5 * osc(freq * 2 * vib, dur, "saw")
-        return lowpass(tone, 900) * adsr(dur, 0.12, 0.2, 0.75, 0.3)
-    x = place(horn(note("A2"), 0.7), horn(note("F2"), 1.0), 0.62)
-    return finish(reverb(lowpass(x, 1800), 2.2, 0.45, damp=2500))
+def marked_gain():
+    """Being marked: a low muffled toll with a slightly sour overtone."""
+    d = 2.0
+    toll = bell(note("C3"), d, partials=((1.0, 1.0, 0.9), (1.41, 0.35, 0.6), (2.0, 0.3, 0.5), (2.83, 0.15, 0.3)))
+    under = soft_tone(note("C2"), d, 0.3, 1.2) * 0.5
+    x = lowpass(toll + under, 1400)
+    return finish(reverb(x, 1.8, 0.35, damp=1500), peak=0.6)
 
 
-def hex_survive():
-    """Outlasting the Hex: a short brass fanfare."""
-    def brass(freq, dur):
-        tone = osc(freq, dur, "saw") + 0.3 * osc(freq * 1.003, dur, "saw")
-        return sweep_lowpass(tone, 900, 3000) * adsr(dur, 0.03, 0.1, 0.7, 0.15)
-    x = np.zeros(1)
-    for at, n, dur in [(0.0, "C4", 0.14), (0.15, "E4", 0.14), (0.30, "G4", 0.14)]:
-        x = place(x, brass(note(n), dur), at)
-    for n in ["C4", "G4", "C5", "E5"]:
-        x = place(x, brass(note(n), 0.9) * 0.7, 0.45)
-    return finish(reverb(x, 1.6, 0.3))
+def marked_pass():
+    """Passing the mark: a short soft rush from one player to the other."""
+    d = 0.6
+    rush = sweep_bandpass(noise(d, 22), 400, 2400, q=2.5) * adsr(d, 0.15, 0.1, 0.6, 0.3)
+    tone = soft_tone(glide(note("C3"), note("G3"), d), d, 0.1, 0.3) * 0.4
+    return finish(reverb(rush + tone, 0.8, 0.25, damp=2500), peak=0.55)
 
 
-def downed_fall():
-    """Going down: a heavy body thud, then a slow heartbeat."""
-    d = 0.5
-    thud = osc(glide(110, 38, d), d) * decay(d, 0.12) + lowpass(noise(d, 4), 400) * decay(d, 0.05) * 0.8
+def marked_end():
+    """The mark fades: a falling breath and a gentle low settle."""
+    d = 1.4
+    breath = sweep_bandpass(noise(d, 23), 2000, 300, q=2) * adsr(d, 0.05, 0.3, 0.4, 0.9) * 0.8
+    settle = soft_tone(note("F2"), d, 0.2, 1.0) * 0.5
+    return finish(reverb(breath + settle, 1.2, 0.3, damp=2000), peak=0.5)
+
+
+def downed_heartbeat():
+    """While down: one slow lub-dub, felt more than heard."""
     def beat(strength):
-        b = osc(glide(70, 45, 0.18), 0.18) * decay(0.18, 0.05) * strength
-        return lowpass(b, 300)
-    x = place(thud * 1.2, beat(1.0), 0.55)
-    x = place(x, beat(0.7), 0.72)
-    x = place(x, beat(0.9), 1.25)
-    x = place(x, beat(0.6), 1.42)
-    return finish(reverb(x, 0.9, 0.2, damp=1500))
+        b = osc(glide(62, 38, 0.16), 0.16) * decay(0.16, 0.045) * strength
+        return lowpass(b, 220)
+    x = place(beat(1.0), beat(0.65), 0.2)
+    return finish(np.pad(x, (0, n_samples(0.1))), peak=0.7, fade_ms=4)
 
 
 def downed_revive():
-    """Pulled back up: a rising sparkle and an upward whoosh."""
-    x = np.zeros(1)
-    for i, n in enumerate(["C5", "E5", "G5", "C6", "E6", "G6"]):
-        x = place(x, pluck(note(n), 0.6, tau=0.2, bright=0.25) * 0.7, 0.06 * i)
-    whoosh = sweep_bandpass(noise(0.6, 5), 400, 5000, q=3) * adsr(0.6, 0.3, 0.1, 0.6, 0.2) * 0.6
-    x = place(x, whoosh, 0.0)
-    x = place(x, sum(osc(note(n), 0.8) for n in ["C5", "E5", "G5"]) * decay(0.8, 0.3) * 0.3, 0.36)
-    return finish(reverb(x, 1.2, 0.3))
-
-
-def warper_warp():
-    """Space folds: a descending 'vworp' with a phasing shimmer."""
-    d = 0.8
-    f = glide(1100, 110, d)
-    tone = osc(f, d, "saw") * 0.5 + osc(f * 1.5, d, "sine") * 0.4
-    trem = 0.6 + 0.4 * np.sin(2 * np.pi * glide(30, 6, d, "lin") * time(d))
-    tone = sweep_lowpass(tone * trem, 5000, 600) * adsr(d, 0.01, 0.2, 0.7, 0.4)
-    shimmer = sweep_bandpass(noise(d, 6), 7000, 500, q=6) * decay(d, 0.3) * 0.5
-    comb = tone + np.roll(tone, n_samples(0.004)) * 0.6  # cheap phaser-ish comb
-    return finish(reverb(comb + shimmer, 1.0, 0.3))
-
-
-def thief_steal():
-    """Snatched: a quick swish, two bright plinks and a nasty little giggle."""
-    swish = sweep_bandpass(noise(0.16, 7), 1500, 7000, q=3) * adsr(0.16, 0.04, 0.05, 0.5, 0.07)
-    x = place(swish, pluck(note("E6"), 0.25, tau=0.06, bright=0.2) * 0.6, 0.08)
-    x = place(x, pluck(note("B6"), 0.25, tau=0.06, bright=0.2) * 0.6, 0.15)
-    for i, f in enumerate([1300, 1150, 1000]):
-        blip = osc(glide(f, f * 0.8, 0.06), 0.06, "tri") * adsr(0.06, 0.005, 0.02, 0.5, 0.02) * 0.45
-        x = place(x, blip, 0.32 + i * 0.08)
-    return finish(reverb(x, 0.5, 0.15))
-
-
-def magnetic_charge():
-    """Wind-up: a rising electric hum that tightens before the pull."""
-    d = 1.5
-    f = glide(70, 150, d)
-    hum = osc(f, d, "saw") + 0.6 * osc(f * 3.01, d, "saw")
-    rate = glide(4, 22, d)
-    trem = 0.55 + 0.45 * np.sin(2 * np.pi * np.cumsum(rate) / SR)
-    hum = sweep_lowpass(hum * trem, 200, 3500) * np.linspace(0.1, 1, n_samples(d)) ** 1.5
-    crackle = highpass(noise(d, 8), 4000) * (np.random.default_rng(9).random(n_samples(d)) > 0.995) * 0.6
-    return finish(hum + crackle)
-
-
-def magnetic_pulse():
-    """The yank: a deep, room-shaking whoomp."""
-    d = 0.9
-    boom = osc(glide(150, 32, d), d) * decay(d, 0.22)
-    air = lowpass(noise(d, 10), 700) * decay(d, 0.08) * 0.9
-    x = drive(boom * 1.3 + air, 2.0)
-    return finish(reverb(x, 1.2, 0.25, damp=2000))
-
-
-def volatile_fuse():
-    """Ticking down: fizzing sparks and beeps that speed up until the end."""
-    d = 1.5
-    fizz = highpass(noise(d, 11), 3000) * 0.25
-    pops = (np.random.default_rng(12).random(n_samples(d)) > 0.997) * np.random.default_rng(13).uniform(0.3, 1, n_samples(d))
-    fizz += lowpass(pops, 6000) * 0.8
-    x = fizz * np.linspace(0.6, 1, n_samples(d))
-    at, gap = 0.0, 0.26
-    while at < d - 0.05:
-        x = place(x, osc(1900, 0.045, "square") * adsr(0.045, 0.002, 0.01, 0.6, 0.01) * 0.35, at)
-        at += gap
-        gap = max(0.045, gap * 0.8)
-    return finish(x[: n_samples(d)])
-
-
-def champion_slain():
-    """A champion falls: a gong strike blooming into a major chord."""
-    d = 2.4
-    gong = bell(note("D3"), d, partials=((1.0, 1.0, 1.4), (1.48, 0.6, 1.1), (2.03, 0.5, 0.9),
-                                        (2.74, 0.35, 0.7), (3.53, 0.25, 0.5), (4.41, 0.18, 0.35)))
-    chord = sum(osc(note(n), d, "saw") + 0.3 * osc(note(n) * 1.004, d, "saw") for n in ["D4", "A4", "D5", "F#5"])
-    chord = sweep_lowpass(chord * 0.12, 600, 3500) * adsr(d, 0.35, 0.3, 0.6, 1.0)
-    return finish(reverb(gong + chord, 2.2, 0.35))
-
-
-def warded_deflect():
-    """A hit glances off: a hard metallic ting."""
-    d = 0.5
-    ting = sum(a * osc(f, d) * decay(d, t) for f, a, t in [(2400, 1.0, 0.12), (3720, 0.6, 0.08), (5130, 0.4, 0.05), (1250, 0.5, 0.15)])
-    click = highpass(noise(0.02, 14), 2000) * decay(0.02, 0.004)
-    return finish(reverb(place(ting, click, 0), 0.5, 0.15))
+    """Helped up: a soft breath in and a warm note that opens up."""
+    d = 1.1
+    breath = sweep_bandpass(noise(d, 24), 300, 1800, q=2) * adsr(d, 0.4, 0.1, 0.5, 0.5) * 0.6
+    lift = soft_tone(note("A3"), d, 0.25, 0.7) * 0.5 + soft_tone(note("E4"), d, 0.35, 0.7) * 0.35
+    return finish(reverb(breath + lowpass(lift, 2000), 1.0, 0.25, damp=2500), peak=0.55)
 
 
 SOUNDS = {
-    "ring/deeper": ring_deeper,
-    "ring/home": ring_home,
-    "hex/curse": hex_curse,
-    "hex/pass": hex_pass,
-    "hex/ambush": hex_ambush,
-    "hex/survive": hex_survive,
-    "downed/fall": downed_fall,
+    "danger/up": danger_up,
+    "danger/down": danger_down,
+    "marked/gain": marked_gain,
+    "marked/pass": marked_pass,
+    "marked/end": marked_end,
+    "downed/heartbeat": downed_heartbeat,
     "downed/revive": downed_revive,
-    "warper/warp": warper_warp,
-    "thief/steal": thief_steal,
-    "magnetic/charge": magnetic_charge,
-    "magnetic/pulse": magnetic_pulse,
-    "volatile/fuse": volatile_fuse,
-    "elite/champion_slain": champion_slain,
-    "warded/deflect": warded_deflect,
 }
 
 

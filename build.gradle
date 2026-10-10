@@ -4,10 +4,10 @@ plugins {
 }
 
 version = project.mod_version
-group = 'dev.anthonyw.distantfrontiers'
+group = 'dev.anthonyw.furtherout'
 
 base {
-    archivesName = 'distantfrontiers'
+    archivesName = 'furtherout'
 }
 
 java {
@@ -22,12 +22,12 @@ java {
 sourceSets.main.java.srcDir 'core/src/main/java'
 
 // ---------------------------------------------------------------------------
-// Resource pack (custom sounds, icons, title animations). The zip is built
+// Optional sound pack. The zip is built
 // reproducibly - same assets, same bytes, same SHA-1 - and its URL + SHA-1 are
 // baked into the jar so the server can offer it to players on join.
 def packZip = tasks.register('resourcePackZip', Zip) {
     from 'resourcepack'
-    archiveFileName = 'distantfrontiers-pack.zip'
+    archiveFileName = 'furtherout-pack.zip'
     destinationDirectory = layout.buildDirectory.dir('pack')
     preserveFileTimestamps = false
     reproducibleFileOrder = true
@@ -46,7 +46,7 @@ def packInfo = tasks.register('resourcePackInfo') {
     doLast {
         def bytes = zipFile.get().asFile.bytes
         def sha1 = java.security.MessageDigest.getInstance('SHA-1').digest(bytes).encodeHex().toString()
-        def out = packInfoDir.get().file('distantfrontiers-pack.properties').asFile
+        def out = packInfoDir.get().file('furtherout-pack.properties').asFile
         out.parentFile.mkdirs()
         out.text = "url=${url}\nsha1=${sha1}\n"
         logger.lifecycle("Resource pack: ${bytes.length} bytes, sha1 ${sha1}")
@@ -68,12 +68,12 @@ neoForge {
         // with a non-zero code if any failed. Used by CI.
         gameTestServer {
             type = 'gameTestServer'
-            systemProperty 'neoforge.enabledGameTestNamespaces', 'distantfrontiers'
+            systemProperty 'neoforge.enabledGameTestNamespaces', 'furtherout'
         }
     }
 
     mods {
-        distantfrontiers {
+        furtherout {
             sourceSet sourceSets.main
         }
     }

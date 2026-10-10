@@ -1,0 +1,25 @@
+{
+  "replace": false,
+  "values": [
+    "#minecraft:base_stone_overworld",
+    "#minecraft:base_stone_nether",
+    "#minecraft:dirt",
+    "#minecraft:sand",
+    "#minecraft:nylium",
+    "#minecraft:leaves",
+    "minecraft:gravel",
+    "minecraft:clay",
+    "minecraft:sandstone",
+    "minecraft:red_sandstone",
+    "minecraft:snow_block",
+    "minecraft:calcite",
+    "minecraft:dripstone_block",
+    "minecraft:smooth_basalt",
+    "minecraft:magma_block",
+    "minecraft:soul_sand",
+    "minecraft:soul_soil",
+    "minecraft:end_stone",
+    { "id": "#c:stones", "required": false },
+    { "id": "#c:ores", "required": false }
+  ]
+}

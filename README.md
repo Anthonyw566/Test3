@@ -8,7 +8,7 @@ Sometimes they'll save you. Sometimes they'll hand you a curse and run.
 
 ## Install
 
-1. Download `distantfrontiers-*.jar` from the
+1. Download `furtherout-*.jar` from the
    [latest release](https://github.com/Anthonyw566/Test3/releases/tag/latest).
 2. Put it in your **server's** `mods/` folder and restart.
 3. Done. Players **don't install anything** — every effect uses vanilla
@@ -99,7 +99,7 @@ arriving, and **everything you kill drops double**.
 
 ## Config
 
-`config/distantfrontiers/` (written on first start, reload with `/rings reload`):
+`config/furtherout/` (written on first start, reload with `/rings reload`):
 
 - **`rings.json`** — ring sizes, names, colors, how tough mobs are, elite /
   champion / digger chances, which abilities appear, elite loot tables, which

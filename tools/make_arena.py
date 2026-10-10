@@ -2,7 +2,7 @@
 """Writes the GameTest arena structure: a 16x8x16 box with a stone floor.
 
 Run from the repo root: python3 tools/make_arena.py
-Output: src/main/resources/data/distantfrontiers/structure/arena.nbt
+Output: src/main/resources/data/furtherout/structure/arena.nbt
 """
 import gzip
 import io
@@ -74,7 +74,7 @@ def main():
     w_compound_list(out, "entities", [])
     out.write(struct.pack(">b", TAG_END))
 
-    path = "src/main/resources/data/distantfrontiers/structure/arena.nbt"
+    path = "src/main/resources/data/furtherout/structure/arena.nbt"
     with gzip.open(path, "wb") as f:
         f.write(out.getvalue())
     print(f"wrote {path} ({len(blocks)} blocks)")

@@ -1,0 +1,65 @@
+{
+  "danger.up": {
+    "sounds": [
+      {
+        "name": "furtherout:danger/up",
+        "volume": 0.6
+      }
+    ],
+    "subtitle": "subtitles.furtherout.danger.up"
+  },
+  "danger.down": {
+    "sounds": [
+      {
+        "name": "furtherout:danger/down",
+        "volume": 0.6
+      }
+    ],
+    "subtitle": "subtitles.furtherout.danger.down"
+  },
+  "marked.gain": {
+    "sounds": [
+      {
+        "name": "furtherout:marked/gain",
+        "volume": 0.8
+      }
+    ],
+    "subtitle": "subtitles.furtherout.marked.gain"
+  },
+  "marked.pass": {
+    "sounds": [
+      {
+        "name": "furtherout:marked/pass",
+        "volume": 0.8
+      }
+    ],
+    "subtitle": "subtitles.furtherout.marked.pass"
+  },
+  "marked.end": {
+    "sounds": [
+      {
+        "name": "furtherout:marked/end",
+        "volume": 0.7
+      }
+    ],
+    "subtitle": "subtitles.furtherout.marked.end"
+  },
+  "downed.heartbeat": {
+    "sounds": [
+      {
+        "name": "furtherout:downed/heartbeat",
+        "volume": 0.8
+      }
+    ],
+    "subtitle": "subtitles.furtherout.downed.heartbeat"
+  },
+  "downed.revive": {
+    "sounds": [
+      {
+        "name": "furtherout:downed/revive",
+        "volume": 0.8
+      }
+    ],
+    "subtitle": "subtitles.furtherout.downed.revive"
+  }
+}

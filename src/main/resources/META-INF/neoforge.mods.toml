@@ -3,25 +3,25 @@ loaderVersion = "[4,)"
 license = "All Rights Reserved"
 
 [[mods]]
-modId = "distantfrontiers"
+modId = "furtherout"
 version = "0.1.0"
-displayName = "Distant Frontiers"
+displayName = "Further Out"
 description = '''
-Distance-based difficulty rings, elite enemies, expedition heat, and a contract
-board for a private All The Mods 10 server. Server-side only: players do not
-need this mod installed to join.
+Monsters get tougher the further you go from spawn. Elites with one readable
+ability, mobs that dig you out of holes, Downed & Revive, and being Marked.
+Server-side only: players do not need this mod installed to join.
 '''
 # Server-only mod: clients without it may connect.
 displayTest = "IGNORE_ALL_VERSION"
 
-[[dependencies.distantfrontiers]]
+[[dependencies.furtherout]]
 modId = "neoforge"
 type = "required"
 versionRange = "[21.1.0,)"
 ordering = "NONE"
 side = "BOTH"
 
-[[dependencies.distantfrontiers]]
+[[dependencies.furtherout]]
 modId = "minecraft"
 type = "required"
 versionRange = "[1.21.1, 1.22)"

@@ -41,10 +41,10 @@ jobs:
       - name: Upload jar and resource pack
         uses: actions/upload-artifact@v4
         with:
-          name: distantfrontiers
+          name: furtherout
           path: |
-            build/libs/distantfrontiers-*.jar
-            build/pack/distantfrontiers-pack.zip
+            build/libs/furtherout-*.jar
+            build/pack/furtherout-pack.zip
 
       - name: Publish "latest" pre-release
         if: github.event_name == 'push'
@@ -52,10 +52,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release delete latest --cleanup-tag -y || true
-          gh release create latest build/libs/distantfrontiers-*.jar build/pack/distantfrontiers-pack.zip \
+          gh release create latest build/libs/furtherout-*.jar build/pack/furtherout-pack.zip \
             --prerelease --target "$GITHUB_SHA" \
-            --title "Distant Frontiers - latest build" \
-            --notes "Automatic build of ${GITHUB_SHA::7}. Passed the core logic tests and the in-game GameTests. Server-side only: drop the jar into your ATM10 server's mods/ folder. The resource pack is offered to players automatically - you don't need to download it."
+            --title "Further Out - latest build" \
+            --notes "Automatic build of ${GITHUB_SHA::7}. Passed the core logic tests and the in-game GameTests. Server-side only: drop the jar into your ATM10 server's mods/ folder. The optional sound pack is offered to players automatically - you don't need to download it."
 
       # Short, greppable summary at the very end of the log.
       - name: Report
