@@ -58,6 +58,13 @@ so on). They never break anything you'd build with, and they never dig
 within 8 blocks of a bed, chest, furnace or machine. Each one gives up after
 12 blocks.
 
+### Noise
+Explosions and fights carry. Idle monsters within earshot come over to see
+what's going on (about 32 blocks for an explosion, 12 for a fight), and you
+usually hear a groan or two first. A fight only makes noise every few
+seconds, so a long fight doesn't keep pulling more in. The safe area stays
+quiet.
+
 ### Elites
 A few monsters spawn as elites, with an ability in front of their name, like
 *Warping Husk*. Look at one to read it. Champions have two abilities. Each
@@ -137,6 +144,7 @@ the server. A bad value falls back to its default.
 |---|---|
 | Too much digging | `rings.json`: lower `mobs.digChance`, or `mechanics.json`: `digging.maxBlocksPerMob` |
 | Diggers get too close to bases | `digging.baseRadius` (default 8) |
+| Too many monsters join fights | `noise.combatRadius`, `noise.explosionRadius`, or `"noise": { "enabled": false }` |
 | Elites everywhere, or too rare | `elites.eliteChance` and `championChance` per level |
 | Downed is too forgiving or too harsh | `downed.bleedOutSeconds`, `reviveSeconds`, `rescueRange` |
 | Marked is too much | `marked.durationSeconds`, `marked.ambushEverySeconds`, `marked.ambushBaseSize` |

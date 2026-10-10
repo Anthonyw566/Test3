@@ -7,6 +7,7 @@ import dev.anthonyw.furtherout.fx.Fx;
 import dev.anthonyw.furtherout.fx.ResourcePacks;
 import dev.anthonyw.furtherout.fx.Sfx;
 import dev.anthonyw.furtherout.mob.Elites;
+import dev.anthonyw.furtherout.mob.InvestigateGoal;
 import dev.anthonyw.furtherout.ring.BoundaryWatcher;
 import dev.anthonyw.furtherout.ring.Ring;
 import dev.anthonyw.furtherout.ring.RingManager;
@@ -27,6 +28,7 @@ import net.minecraft.world.entity.monster.Husk;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.storage.loot.LootTable;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
@@ -102,6 +104,54 @@ public final class WorldTests {
                 done(h);
             });
         });
+    }
+
+    // ================================================================ Noise
+
+    @GameTest(template = ARENA, batch = "noise_blast", timeoutTicks = 200)
+    public static void explosionsBringMonstersOverToLook(GameTestHelper h) {
+        reset(h, "level2", "{}");
+        Husk husk = h.spawn(EntityType.HUSK, new BlockPos(2, 2, 8));
+        double startX = husk.getX();
+        Vec3 blast = h.absoluteVec(new Vec3(14.5, 2, 8.5));
+        h.getLevel().explode(null, blast.x, blast.y, blast.z, 1.0f, net.minecraft.world.level.Level.ExplosionInteraction.NONE);
+        check(InvestigateGoal.spot(husk) != null, "the husk should have heard it");
+        h.succeedWhen(() -> {
+            check(husk.getX() > startX + 4, "the husk should be walking over, moved " + (husk.getX() - startX));
+            cleanup(h);
+        });
+    }
+
+    @GameTest(template = ARENA, batch = "noise_fight", timeoutTicks = 40)
+    public static void fightsBringNeighboursButOnlyNowAndThen(GameTestHelper h) {
+        reset(h, "level2", "{}");
+        ServerPlayer a = player(h, "A", new BlockPos(2, 2, 8));
+        Husk target = h.spawn(EntityType.HUSK, new BlockPos(3, 2, 8));
+        Husk near = h.spawn(EntityType.HUSK, new BlockPos(12, 2, 8));
+        Husk busy = h.spawn(EntityType.HUSK, new BlockPos(12, 2, 4));
+        near.setNoAi(true);
+        busy.setNoAi(true);
+        busy.setTarget(a);
+        target.hurt(h.getLevel().damageSources().playerAttack(a), 2f);
+        check(InvestigateGoal.spot(near) != null, "an idle husk nearby should come to look");
+        check(InvestigateGoal.spot(busy) == null, "a husk already chasing someone ignores it");
+        Husk later = h.spawn(EntityType.HUSK, new BlockPos(12, 2, 12));
+        later.setNoAi(true);
+        target.invulnerableTime = 0;
+        target.hurt(h.getLevel().damageSources().playerAttack(a), 2f);
+        check(InvestigateGoal.spot(later) == null, "a long fight isn't a magnet: one noise every few seconds");
+        done(h);
+    }
+
+    @GameTest(template = ARENA, batch = "noise_safe", timeoutTicks = 40)
+    public static void theSafeAreaIsQuiet(GameTestHelper h) {
+        reset(h, "safe", "{}");
+        Husk husk = h.spawn(EntityType.HUSK, new BlockPos(2, 2, 8));
+        husk.setNoAi(true);
+        Vec3 blast = h.absoluteVec(new Vec3(14.5, 2, 8.5));
+        h.getLevel().explode(null, blast.x, blast.y, blast.z, 1.0f, net.minecraft.world.level.Level.ExplosionInteraction.NONE);
+        check(InvestigateGoal.spot(husk) == null, "nothing is drawn in at home");
+        done(h);
     }
 
     // ================================================================ Digging

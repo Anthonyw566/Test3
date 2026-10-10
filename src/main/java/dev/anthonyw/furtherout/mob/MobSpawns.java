@@ -61,5 +61,8 @@ public final class MobSpawns {
         if (data.getBoolean(EliteAbilities.TAG_STOLEN)) {
             EliteAbilities.attachFleeGoal(mob);
         }
+        if (mob instanceof Enemy) {
+            InvestigateGoal.attach(mob);
+        }
     }
 }

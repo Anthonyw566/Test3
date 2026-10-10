@@ -7,6 +7,7 @@ import dev.anthonyw.furtherout.fx.ResourcePacks;
 import dev.anthonyw.furtherout.mob.EliteAbilities;
 import dev.anthonyw.furtherout.mob.EliteRewards;
 import dev.anthonyw.furtherout.mob.MobSpawns;
+import dev.anthonyw.furtherout.mob.Noise;
 import dev.anthonyw.furtherout.player.DownedManager;
 import dev.anthonyw.furtherout.player.Keepers;
 import dev.anthonyw.furtherout.player.MarkManager;
@@ -43,6 +44,7 @@ public final class FurtherOut {
         NeoForge.EVENT_BUS.register(new MobSpawns());
         NeoForge.EVENT_BUS.register(new EliteAbilities());
         NeoForge.EVENT_BUS.register(new EliteRewards());
+        NeoForge.EVENT_BUS.register(Noise.INSTANCE);
         NeoForge.EVENT_BUS.register(DownedManager.INSTANCE);
         NeoForge.EVENT_BUS.register(MarkManager.INSTANCE);
         NeoForge.EVENT_BUS.register(Rifts.INSTANCE);
@@ -60,6 +62,7 @@ public final class FurtherOut {
         DownedManager.INSTANCE.clearAll();
         MarkManager.INSTANCE.clearAll();
         Rifts.INSTANCE.clearAll();
+        Noise.INSTANCE.clearAll();
         BoundaryWatcher.clear();
         ResourcePacks.clear();
     }

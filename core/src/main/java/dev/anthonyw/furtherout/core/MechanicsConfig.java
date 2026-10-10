@@ -24,6 +24,7 @@ public record MechanicsConfig(
         Downed downed,
         Marked marked,
         Keeper keeper,
+        Noise noise,
         Pack pack
 ) {
     public record Elites(double eliteHealthBonus, double championHealthBonus,
@@ -92,6 +93,11 @@ public record MechanicsConfig(
     /** The zombie that keeps your things where you died. */
     public record Keeper(boolean enabled, boolean inSafeArea, double leashRadius, double health,
                          double attackDamage) {
+    }
+
+    /** Explosions and fights draw idle monsters nearby to come and look. */
+    public record Noise(boolean enabled, double explosionRadius, double combatRadius, int combatCooldownTicks,
+                        int investigateTicks) {
     }
 
     /**
@@ -214,6 +220,14 @@ public record MechanicsConfig(
                 Json.num(kp, "health", 10, 1, 200, "keeper", errors),
                 Json.num(kp, "attackDamage", 1, 0, 20, "keeper", errors));
 
+        JsonObject nz = Json.obj(root, "noise");
+        Noise noise = new Noise(
+                Json.bool(nz, "enabled", true, "noise", errors),
+                Json.num(nz, "explosionRadius", 32, 0, 128, "noise", errors),
+                Json.num(nz, "combatRadius", 12, 0, 64, "noise", errors),
+                ticks(Json.num(nz, "combatCooldownSeconds", 5, 0, 600, "noise", errors)),
+                ticks(Json.num(nz, "investigateSeconds", 30, 1, 600, "noise", errors)));
+
         JsonObject pk = Json.obj(root, "resourcePack");
         String sha1 = Json.str(pk, "sha1", "").trim().toLowerCase(java.util.Locale.ROOT);
         if (!sha1.isEmpty() && !sha1.matches("[0-9a-f]{40}")) {
@@ -236,7 +250,7 @@ public record MechanicsConfig(
                 url, sha1);
 
         return new MechanicsConfig(elites, warper, thief, magnetic, vol, warded, digging, downed, marked, keeper,
-                pack);
+                noise, pack);
     }
 
     private static int ticks(double seconds) {
@@ -355,6 +369,13 @@ public record MechanicsConfig(
                 "leashRadius": 8,
                 "health": 10,
                 "attackDamage": 1
+              },
+              "noise": {
+                "enabled": true,
+                "explosionRadius": 32,
+                "combatRadius": 12,
+                "combatCooldownSeconds": 5,
+                "investigateSeconds": 30
               },
               "resourcePack": {
                 "enabled": true,

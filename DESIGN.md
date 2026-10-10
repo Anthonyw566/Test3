@@ -29,6 +29,7 @@ difficulty dial, and it makes the *group* the unit of survival.
 | **Danger levels** | Distance from spawn sets the level; the safe area is safe | "Do we push past level 3 tonight?" |
 | **Night** | Every level's edge pulls in by a fifth after dark | "It's getting dark, head back before it gets worse" |
 | **Digging** | Monsters dig natural terrain to reach you (never near a base) | Hearing cracking through the wall of your hidey-hole |
+| **Noise** | Explosions and fights bring idle monsters over to look | Blasting a cave open is a decision, not a free action |
 | **Warping** | A charged hit teleports you: up, aside, or into a friend's place | Your friend is suddenly in your fight |
 | **Thieving** | Takes one stackable hotbar item and runs | A three-person chase through a cave |
 | **Magnetic** | Telegraphed pull of everyone it can see | The group gets clumped… next to the Volatile |
@@ -61,6 +62,8 @@ difficulty dial, and it makes the *group* the unit of survival.
 - **Volatile** damage is capped at 8 (before armour) and breaks no blocks.
 - **Downed** never intercepts void deaths, `/kill`, or anyone alone.
   Logging out while down counts as giving up.
+- **Noise** only moves monsters that have nothing better to do. A player's
+  fights make noise at most every 5 seconds, and the safe area is silent.
 - **Keepers** are weak (10 health, 1 damage) so you can win bare-handed,
   never despawn, burn or drown, and stay within a few blocks of where you
   died. They only take what's left after other mods (grave mods) have had
