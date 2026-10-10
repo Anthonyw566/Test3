@@ -45,9 +45,9 @@ public record RingsConfig(
             "COMMAND", "DISPENSER", "PATROL", "TRIAL_SPAWNER");
 
     /**
-     * Spawns that never get ring treatment (scaling, elites, digging, Hearth
+     * Spawns that never get ring treatment (scaling, elites, digging, safe-area
      * suppression): farms, eggs, commands, conversions, and raids (EVENT) -
-     * cancelling raid waves inside the Hearth could leave a raid stuck.
+     * cancelling raid waves inside the safe area could leave a raid stuck.
      */
     public static final List<String> DEFAULT_EXCLUDED_SPAWN_TYPES = List.of(
             "SPAWNER", "TRIAL_SPAWNER", "MOB_SUMMONED", "CONVERSION", "BREEDING", "BUCKET",
