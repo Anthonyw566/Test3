@@ -39,6 +39,11 @@ public final class MobSpawns {
             mob.getPersistentData().putBoolean(TAG_SUPPRESS, true);
             return;
         }
+        if (Mimics.maybeReplace(level, ring, event.getX(), event.getY(), event.getZ())) {
+            event.setSpawnCancelled(true); // it's bait now
+            mob.getPersistentData().putBoolean(TAG_SUPPRESS, true);
+            return;
+        }
         Elites.scale(mob, ring);
         Elites.rollElite(mob, ring);
         Elites.rollDigger(mob, ring);

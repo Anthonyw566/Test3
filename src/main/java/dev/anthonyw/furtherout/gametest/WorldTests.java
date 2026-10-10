@@ -8,6 +8,7 @@ import dev.anthonyw.furtherout.fx.ResourcePacks;
 import dev.anthonyw.furtherout.fx.Sfx;
 import dev.anthonyw.furtherout.mob.Elites;
 import dev.anthonyw.furtherout.mob.InvestigateGoal;
+import dev.anthonyw.furtherout.mob.Mimics;
 import dev.anthonyw.furtherout.ring.BoundaryWatcher;
 import dev.anthonyw.furtherout.ring.Ring;
 import dev.anthonyw.furtherout.ring.RingManager;
@@ -25,6 +26,8 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.monster.Husk;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.storage.loot.LootTable;
@@ -159,6 +162,13 @@ public final class WorldTests {
     private static final String DARK_SOON = """
             { "darkSounds": { "minMinutes": 0.05, "maxMinutes": 0.05, "maxLight": 15 } }""";
 
+    /** The kinds of sound DarkSounds plays (other world sounds may reach a test player too). */
+    private static boolean darkSound(String id) {
+        return id.contains(".step") || id.contains(".hit") || id.contains(".break") || id.contains("door")
+                || id.contains("chest") || id.contains("zombie.ambient") || id.contains("fire.extinguish")
+                || id.contains("creeper.primed");
+    }
+
     @GameTest(template = ARENA, batch = "dark_alone", timeoutTicks = 140)
     public static void aloneInTheDarkYouHearSomethingBehindYou(GameTestHelper h) {
         reset(h, "level2", DARK_SOON);
@@ -167,7 +177,8 @@ public final class WorldTests {
         h.runAfterDelay(110, () -> {
             List<net.minecraft.network.protocol.game.ClientboundSoundPacket> heard = drain(a).stream()
                     .filter(p -> p instanceof net.minecraft.network.protocol.game.ClientboundSoundPacket)
-                    .map(p -> (net.minecraft.network.protocol.game.ClientboundSoundPacket) p).toList();
+                    .map(p -> (net.minecraft.network.protocol.game.ClientboundSoundPacket) p)
+                    .filter(p -> darkSound(p.getSound().value().getLocation().toString())).toList();
             check(!heard.isEmpty(), "a lone player in the dark should hear something");
             var first = heard.get(0);
             double away = a.position().distanceTo(new Vec3(first.getX(), a.getY(), first.getZ()));
@@ -184,7 +195,60 @@ public final class WorldTests {
         drain(a);
         h.runAfterDelay(110, () -> {
             String heard = soundsSent(drain(a));
-            check(heard.isEmpty(), "company means silence, heard: " + heard);
+            check(java.util.Arrays.stream(heard.split(" ")).noneMatch(WorldTests::darkSound),
+                    "company means silence, heard: " + heard);
+            done(h);
+        });
+    }
+
+    // ================================================================ Bait
+
+    @GameTest(template = ARENA, batch = "mimic", timeoutTicks = 100)
+    public static void baitSnapsIntoAMonsterThatDropsIt(GameTestHelper h) {
+        reset(h, "level3", "{}");
+        ServerPlayer a = player(h, "A", new BlockPos(2, 2, 8));
+        net.minecraft.world.entity.item.ItemEntity bait = Mimics.place(h.getLevel(),
+                h.absoluteVec(new Vec3(12.5, 2, 8.5)), new ItemStack(Items.DIAMOND), "minecraft:husk");
+        check(bait.hasPickUpDelay(), "bait can never be picked up");
+        h.runAfterDelay(10, () -> {
+            check(!bait.isRemoved(), "nothing happens while you keep your distance");
+            Vec3 close = h.absoluteVec(new Vec3(11.5, 2, 8.5));
+            a.teleportTo(close.x, close.y, close.z);
+            h.runAfterDelay(10, () -> {
+                check(bait.isRemoved(), "reaching for it springs the trap");
+                List<Husk> husks = h.getLevel().getEntitiesOfClass(Husk.class, a.getBoundingBox().inflate(4));
+                check(husks.size() == 1, "one monster, found " + husks.size());
+                Husk husk = husks.get(0);
+                check(husk.getMainHandItem().is(Items.DIAMOND), "it holds the bait");
+                check(husk.getTarget() == a, "and it's after you");
+                Vec3 where = husk.position();
+                husk.kill();
+                check(!h.getLevel().getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class,
+                        new net.minecraft.world.phys.AABB(where, where).inflate(3),
+                        e -> e.getItem().is(Items.DIAMOND)).isEmpty(), "and you get the diamond in the end");
+                done(h);
+            });
+        });
+    }
+
+    @GameTest(template = ARENA, batch = "mimic_spawn", timeoutTicks = 60)
+    public static void aCaveSpawnCanBecomeBait(GameTestHelper h) {
+        reset(h, "level3", "{ \"mimic\": { \"chance\": 1.0 } }");
+        for (int x = 9; x <= 15; x++) {
+            for (int z = 9; z <= 15; z++) {
+                h.setBlock(new BlockPos(x, 4, z), Blocks.STONE); // a low roof: no sky here
+            }
+        }
+        player(h, "A", new BlockPos(2, 2, 2));
+        h.runAfterDelay(5, () -> {
+            EntityType.HUSK.spawn(h.getLevel(), h.absolutePos(new BlockPos(12, 2, 12)), MobSpawnType.NATURAL);
+            check(h.getLevel().getEntitiesOfClass(Husk.class,
+                            new net.minecraft.world.phys.AABB(h.absolutePos(new BlockPos(12, 2, 12))).inflate(3)).isEmpty(),
+                    "the spawn should have become bait instead");
+            List<net.minecraft.world.entity.item.ItemEntity> baits = h.getLevel().getEntitiesOfClass(
+                    net.minecraft.world.entity.item.ItemEntity.class,
+                    new net.minecraft.world.phys.AABB(h.absolutePos(new BlockPos(12, 2, 12))).inflate(2), Mimics::isBait);
+            check(baits.size() == 1, "one piece of bait, found " + baits.size());
             done(h);
         });
     }

@@ -26,6 +26,7 @@ public record MechanicsConfig(
         Keeper keeper,
         Noise noise,
         DarkSounds darkSounds,
+        Mimic mimic,
         Pack pack
 ) {
     public record Elites(double eliteHealthBonus, double championHealthBonus,
@@ -103,6 +104,11 @@ public record MechanicsConfig(
 
     /** Rare sounds only a lone player in the dark hears. */
     public record DarkSounds(boolean enabled, int minTicks, int maxTicks, double aloneRange, int maxLight) {
+    }
+
+    /** Rare bait items in dark caves that turn into a monster when you reach for them. */
+    public record Mimic(boolean enabled, double chance, int minDanger, double playerRange, double triggerRadius,
+                       List<String> mobs, List<MimicRules.Bait> baits) {
     }
 
     /**
@@ -246,6 +252,22 @@ public record MechanicsConfig(
                 Json.num(ds, "aloneRange", 48, 0, 512, "darkSounds", errors),
                 Json.integer(ds, "maxLight", 3, 0, 15, "darkSounds", errors));
 
+        JsonObject mm = Json.obj(root, "mimic");
+        List<String> baitEntries = new ArrayList<>();
+        if (mm.has("baits") && mm.get("baits").isJsonArray()) {
+            mm.getAsJsonArray("baits").forEach(entry -> baitEntries.add(entry.getAsString()));
+        } else {
+            baitEntries.addAll(DEFAULT_BAITS);
+        }
+        Mimic mimic = new Mimic(
+                Json.bool(mm, "enabled", true, "mimic", errors),
+                Json.num(mm, "chance", 0.004, 0, 1, "mimic", errors),
+                Json.integer(mm, "minDanger", 2, 0, 100, "mimic", errors),
+                Json.num(mm, "playerRange", 32, 1, 128, "mimic", errors),
+                Json.num(mm, "triggerRadius", 2.5, 0.5, 8, "mimic", errors),
+                Json.ids(mm, "mobs", DEFAULT_MIMIC_MOBS, "mimic", errors),
+                MimicRules.parseBaits(baitEntries, errors));
+
         JsonObject pk = Json.obj(root, "resourcePack");
         String sha1 = Json.str(pk, "sha1", "").trim().toLowerCase(java.util.Locale.ROOT);
         if (!sha1.isEmpty() && !sha1.matches("[0-9a-f]{40}")) {
@@ -268,7 +290,7 @@ public record MechanicsConfig(
                 url, sha1);
 
         return new MechanicsConfig(elites, warper, thief, magnetic, vol, warded, digging, downed, marked, keeper,
-                noise, darkSounds, pack);
+                noise, darkSounds, mimic, pack);
     }
 
     private static int ticks(double seconds) {
@@ -292,6 +314,13 @@ public record MechanicsConfig(
     public static final List<String> DEFAULT_AMBUSH_MOBS = List.of(
             "minecraft:zombie", "minecraft:husk", "minecraft:skeleton", "minecraft:spider",
             "minecraft:creeper", "minecraft:vindicator");
+
+    public static final List<String> DEFAULT_MIMIC_MOBS = List.of(
+            "minecraft:zombie", "minecraft:husk", "minecraft:skeleton", "minecraft:spider");
+
+    public static final List<String> DEFAULT_BAITS = List.of(
+            "minecraft:diamond", "minecraft:emerald*2", "minecraft:gold_ingot*3", "minecraft:iron_ingot*5",
+            "minecraft:ender_pearl", "minecraft:lapis_lazuli*6");
 
     public static final String DEFAULT_JSON = """
             {
@@ -401,6 +430,16 @@ public record MechanicsConfig(
                 "maxMinutes": 20,
                 "aloneRange": 48,
                 "maxLight": 3
+              },
+              "mimic": {
+                "enabled": true,
+                "chance": 0.004,
+                "minDanger": 2,
+                "playerRange": 32,
+                "triggerRadius": 2.5,
+                "mobs": ["minecraft:zombie", "minecraft:husk", "minecraft:skeleton", "minecraft:spider"],
+                "baits": ["minecraft:diamond", "minecraft:emerald*2", "minecraft:gold_ingot*3",
+                          "minecraft:iron_ingot*5", "minecraft:ender_pearl", "minecraft:lapis_lazuli*6"]
               },
               "resourcePack": {
                 "enabled": true,

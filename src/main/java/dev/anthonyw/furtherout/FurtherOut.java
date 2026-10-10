@@ -6,6 +6,7 @@ import dev.anthonyw.furtherout.config.Configs;
 import dev.anthonyw.furtherout.fx.ResourcePacks;
 import dev.anthonyw.furtherout.mob.EliteAbilities;
 import dev.anthonyw.furtherout.mob.EliteRewards;
+import dev.anthonyw.furtherout.mob.Mimics;
 import dev.anthonyw.furtherout.mob.MobSpawns;
 import dev.anthonyw.furtherout.mob.Noise;
 import dev.anthonyw.furtherout.player.DarkSounds;
@@ -46,6 +47,7 @@ public final class FurtherOut {
         NeoForge.EVENT_BUS.register(new EliteAbilities());
         NeoForge.EVENT_BUS.register(new EliteRewards());
         NeoForge.EVENT_BUS.register(Noise.INSTANCE);
+        NeoForge.EVENT_BUS.register(Mimics.INSTANCE);
         NeoForge.EVENT_BUS.register(DownedManager.INSTANCE);
         NeoForge.EVENT_BUS.register(MarkManager.INSTANCE);
         NeoForge.EVENT_BUS.register(Rifts.INSTANCE);

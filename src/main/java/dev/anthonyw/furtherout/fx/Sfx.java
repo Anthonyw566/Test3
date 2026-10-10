@@ -30,6 +30,7 @@ public enum Sfx {
     DOWNED_HEARTBEAT("downed.heartbeat", SoundEvents.NOTE_BLOCK_BASEDRUM, SoundSource.PLAYERS, 0.5f, 0.5f),
     DOWNED_REVIVE("downed.revive", SoundEvents.TOTEM_USE, SoundSource.PLAYERS, 0.35f, 1.4f),
 
+    MIMIC_SPRING(null, SoundEvents.EVOKER_FANGS_ATTACK, SoundSource.HOSTILE, 1.0f, 1.2f),
     KEEPER_SPILL(null, SoundEvents.BUNDLE_DROP_CONTENTS, SoundSource.NEUTRAL, 1.0f, 0.9f),
 
     WARP(null, SoundEvents.ENDERMAN_TELEPORT, SoundSource.HOSTILE, 1.0f, 0.9f),

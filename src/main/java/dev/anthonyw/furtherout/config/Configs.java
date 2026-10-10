@@ -87,6 +87,16 @@ public final class Configs {
                 problems.add("mechanics.json: marked.ambushMobs lists " + id + ", which isn't in this pack");
             }
         }
+        for (String id : config.mimic().mobs()) {
+            if (!BuiltInRegistries.ENTITY_TYPE.containsKey(ResourceLocation.parse(id))) {
+                problems.add("mechanics.json: mimic.mobs lists " + id + ", which isn't in this pack");
+            }
+        }
+        for (var bait : config.mimic().baits()) {
+            if (!BuiltInRegistries.ITEM.containsKey(ResourceLocation.parse(bait.itemId()))) {
+                problems.add("mechanics.json: mimic.baits lists " + bait.itemId() + ", which isn't in this pack");
+            }
+        }
         for (String id : config.digging().blockBlacklist()) {
             if (!BuiltInRegistries.BLOCK.containsKey(ResourceLocation.parse(id))) {
                 problems.add("mechanics.json: digging.blockBlacklist lists " + id + ", which isn't in this pack");

@@ -65,6 +65,13 @@ usually hear a groan or two first. A fight only makes noise every few
 seconds, so a long fight doesn't keep pulling more in. The safe area stays
 quiet.
 
+### Bait
+Very rarely, deep in a dark cave (level 2 and beyond), something worth
+picking up is lying on the floor: a diamond, a few gold ingots, an ender
+pearl. It can't be picked up, and every couple of seconds it twitches.
+Reach for it and it snaps into a monster holding the bait, which it drops
+when it dies. So you do get the diamond in the end.
+
 ### Alone in the dark
 If you're on your own in real darkness, away from spawn and with nobody
 within about 50 blocks, you'll occasionally hear something behind you that
@@ -152,6 +159,7 @@ the server. A bad value falls back to its default.
 | Too much digging | `rings.json`: lower `mobs.digChance`, or `mechanics.json`: `digging.maxBlocksPerMob` |
 | Diggers get too close to bases | `digging.baseRadius` (default 8) |
 | The sounds in the dark get on your nerves | `darkSounds.minMinutes` / `maxMinutes`, or `"darkSounds": { "enabled": false }` |
+| Bait is too common, or the wrong things | `mimic.chance` (default 0.004 of cave spawns), `mimic.baits`, `mimic.mobs` |
 | Too many monsters join fights | `noise.combatRadius`, `noise.explosionRadius`, or `"noise": { "enabled": false }` |
 | Elites everywhere, or too rare | `elites.eliteChance` and `championChance` per level |
 | Downed is too forgiving or too harsh | `downed.bleedOutSeconds`, `reviveSeconds`, `rescueRange` |
