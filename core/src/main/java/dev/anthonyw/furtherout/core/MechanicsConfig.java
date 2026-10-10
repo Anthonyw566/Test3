@@ -25,6 +25,7 @@ public record MechanicsConfig(
         Marked marked,
         Keeper keeper,
         Noise noise,
+        DarkSounds darkSounds,
         Pack pack
 ) {
     public record Elites(double eliteHealthBonus, double championHealthBonus,
@@ -98,6 +99,10 @@ public record MechanicsConfig(
     /** Explosions and fights draw idle monsters nearby to come and look. */
     public record Noise(boolean enabled, double explosionRadius, double combatRadius, int combatCooldownTicks,
                         int investigateTicks) {
+    }
+
+    /** Rare sounds only a lone player in the dark hears. */
+    public record DarkSounds(boolean enabled, int minTicks, int maxTicks, double aloneRange, int maxLight) {
     }
 
     /**
@@ -228,6 +233,19 @@ public record MechanicsConfig(
                 ticks(Json.num(nz, "combatCooldownSeconds", 5, 0, 600, "noise", errors)),
                 ticks(Json.num(nz, "investigateSeconds", 30, 1, 600, "noise", errors)));
 
+        JsonObject ds = Json.obj(root, "darkSounds");
+        int dsMin = ticks(Json.num(ds, "minMinutes", 8, 0.05, 600, "darkSounds", errors) * 60);
+        int dsMax = ticks(Json.num(ds, "maxMinutes", 20, 0.05, 600, "darkSounds", errors) * 60);
+        if (dsMax < dsMin) {
+            errors.add("darkSounds.maxMinutes is less than minMinutes (using minMinutes for both)");
+            dsMax = dsMin;
+        }
+        DarkSounds darkSounds = new DarkSounds(
+                Json.bool(ds, "enabled", true, "darkSounds", errors),
+                dsMin, dsMax,
+                Json.num(ds, "aloneRange", 48, 0, 512, "darkSounds", errors),
+                Json.integer(ds, "maxLight", 3, 0, 15, "darkSounds", errors));
+
         JsonObject pk = Json.obj(root, "resourcePack");
         String sha1 = Json.str(pk, "sha1", "").trim().toLowerCase(java.util.Locale.ROOT);
         if (!sha1.isEmpty() && !sha1.matches("[0-9a-f]{40}")) {
@@ -250,7 +268,7 @@ public record MechanicsConfig(
                 url, sha1);
 
         return new MechanicsConfig(elites, warper, thief, magnetic, vol, warded, digging, downed, marked, keeper,
-                noise, pack);
+                noise, darkSounds, pack);
     }
 
     private static int ticks(double seconds) {
@@ -376,6 +394,13 @@ public record MechanicsConfig(
                 "combatRadius": 12,
                 "combatCooldownSeconds": 5,
                 "investigateSeconds": 30
+              },
+              "darkSounds": {
+                "enabled": true,
+                "minMinutes": 8,
+                "maxMinutes": 20,
+                "aloneRange": 48,
+                "maxLight": 3
               },
               "resourcePack": {
                 "enabled": true,

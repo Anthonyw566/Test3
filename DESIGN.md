@@ -30,6 +30,7 @@ difficulty dial, and it makes the *group* the unit of survival.
 | **Night** | Every level's edge pulls in by a fifth after dark | "It's getting dark, head back before it gets worse" |
 | **Digging** | Monsters dig natural terrain to reach you (never near a base) | Hearing cracking through the wall of your hidey-hole |
 | **Noise** | Explosions and fights bring idle monsters over to look | Blasting a cave open is a decision, not a free action |
+| **Alone in the dark** | Rare sounds behind a lone player, which only they hear | "Did you hear that?" "Hear what?" |
 | **Warping** | A charged hit teleports you: up, aside, or into a friend's place | Your friend is suddenly in your fight |
 | **Thieving** | Takes one stackable hotbar item and runs | A three-person chase through a cave |
 | **Magnetic** | Telegraphed pull of everyone it can see | The group gets clumped… next to the Volatile |
@@ -64,6 +65,9 @@ difficulty dial, and it makes the *group* the unit of survival.
   Logging out while down counts as giving up.
 - **Noise** only moves monsters that have nothing better to do. A player's
   fights make noise at most every 5 seconds, and the safe area is silent.
+- **Sounds in the dark** need real darkness, nobody within 48 blocks and
+  distance from spawn, and come 8 to 20 minutes apart. Nothing is ever
+  spawned with them.
 - **Keepers** are weak (10 health, 1 damage) so you can win bare-handed,
   never despawn, burn or drown, and stay within a few blocks of where you
   died. They only take what's left after other mods (grave mods) have had

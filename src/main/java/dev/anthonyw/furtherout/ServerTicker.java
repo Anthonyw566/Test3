@@ -1,5 +1,6 @@
 package dev.anthonyw.furtherout;
 
+import dev.anthonyw.furtherout.player.DarkSounds;
 import dev.anthonyw.furtherout.player.DownedManager;
 import dev.anthonyw.furtherout.player.MarkManager;
 import dev.anthonyw.furtherout.player.Rifts;
@@ -31,6 +32,7 @@ public final class ServerTicker {
             }
             MarkManager.INSTANCE.tick(server);
             Rifts.INSTANCE.tick(server);
+            DarkSounds.INSTANCE.tick(server);
         }
     }
 

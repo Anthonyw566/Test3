@@ -55,6 +55,7 @@ final class TestKit {
         DownedManager.INSTANCE.clearAll();
         MarkManager.INSTANCE.clearAll();
         Rifts.INSTANCE.clearAll();
+        dev.anthonyw.furtherout.player.DarkSounds.INSTANCE.clearAll();
 
         List<String> errors = new ArrayList<>();
         Configs.setMechanicsForTesting(MechanicsConfig.parse(mechanicsJson, errors));

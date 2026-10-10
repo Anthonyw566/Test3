@@ -154,6 +154,41 @@ public final class WorldTests {
         done(h);
     }
 
+    // ================================================================ Alone in the dark
+
+    private static final String DARK_SOON = """
+            { "darkSounds": { "minMinutes": 0.05, "maxMinutes": 0.05, "maxLight": 15 } }""";
+
+    @GameTest(template = ARENA, batch = "dark_alone", timeoutTicks = 140)
+    public static void aloneInTheDarkYouHearSomethingBehindYou(GameTestHelper h) {
+        reset(h, "level2", DARK_SOON);
+        ServerPlayer a = player(h, "Alone", new BlockPos(8, 2, 8));
+        drain(a);
+        h.runAfterDelay(110, () -> {
+            List<net.minecraft.network.protocol.game.ClientboundSoundPacket> heard = drain(a).stream()
+                    .filter(p -> p instanceof net.minecraft.network.protocol.game.ClientboundSoundPacket)
+                    .map(p -> (net.minecraft.network.protocol.game.ClientboundSoundPacket) p).toList();
+            check(!heard.isEmpty(), "a lone player in the dark should hear something");
+            var first = heard.get(0);
+            double away = a.position().distanceTo(new Vec3(first.getX(), a.getY(), first.getZ()));
+            check(away >= 3, "it comes from a few blocks away, not from you: " + away);
+            done(h);
+        });
+    }
+
+    @GameTest(template = ARENA, batch = "dark_company", timeoutTicks = 140)
+    public static void withAFriendNearbyItStaysQuiet(GameTestHelper h) {
+        reset(h, "level2", DARK_SOON);
+        ServerPlayer a = player(h, "A", new BlockPos(4, 2, 8));
+        player(h, "B", new BlockPos(12, 2, 8));
+        drain(a);
+        h.runAfterDelay(110, () -> {
+            String heard = soundsSent(drain(a));
+            check(heard.isEmpty(), "company means silence, heard: " + heard);
+            done(h);
+        });
+    }
+
     // ================================================================ Digging
 
     private static final BlockPos BUNKER = new BlockPos(12, 2, 8);

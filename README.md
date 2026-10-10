@@ -65,6 +65,13 @@ usually hear a groan or two first. A fight only makes noise every few
 seconds, so a long fight doesn't keep pulling more in. The safe area stays
 quiet.
 
+### Alone in the dark
+If you're on your own in real darkness, away from spawn and with nobody
+within about 50 blocks, you'll occasionally hear something behind you that
+nobody else hears: footsteps, someone mining, a door, a chest closing. It's
+always a vanilla sound and it's minutes apart. Nothing ever comes of it.
+Probably.
+
 ### Elites
 A few monsters spawn as elites, with an ability in front of their name, like
 *Warping Husk*. Look at one to read it. Champions have two abilities. Each
@@ -144,6 +151,7 @@ the server. A bad value falls back to its default.
 |---|---|
 | Too much digging | `rings.json`: lower `mobs.digChance`, or `mechanics.json`: `digging.maxBlocksPerMob` |
 | Diggers get too close to bases | `digging.baseRadius` (default 8) |
+| The sounds in the dark get on your nerves | `darkSounds.minMinutes` / `maxMinutes`, or `"darkSounds": { "enabled": false }` |
 | Too many monsters join fights | `noise.combatRadius`, `noise.explosionRadius`, or `"noise": { "enabled": false }` |
 | Elites everywhere, or too rare | `elites.eliteChance` and `championChance` per level |
 | Downed is too forgiving or too harsh | `downed.bleedOutSeconds`, `reviveSeconds`, `rescueRange` |

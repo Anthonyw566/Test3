@@ -119,6 +119,7 @@ public final class RingsCommand {
             {"Downed", "die with a friend nearby and you go down instead. They crouch next to you to help you up."},
             {"Marked", "killing an elite can mark you. Monsters hunt you and drops double. Hit a player to pass it on."},
             {"Noise", "explosions and fights bring idle monsters nearby over to look."},
+            {"Alone", "in the dark, far from anyone, you might hear things. Probably nothing."},
             {"Night", "danger reaches about a fifth closer to spawn. The safe area stays the same."},
             {"Dying", "away from spawn, a weak zombie wearing your head keeps your things where you died."},
             {"/rings", "shows your danger level."},
